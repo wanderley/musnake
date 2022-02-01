@@ -115,11 +115,17 @@
         (#(assoc % :food (get-unoccupied-pos! %))))
     app-state))
 
+(defn maybe-restart [app-state]
+  (if (-> app-state :snake :alive?)
+    app-state
+    (assoc app-state :snake (:snake client-initial-state))))
+
 (defn process-frame [app-state]
   (-> app-state
       (update :snake move-snake)
       (update :snake update-snake-alive? (:board app-state))
-      (maybe-eat!)))
+      (maybe-eat!)
+      (maybe-restart)))
 
 (defn connect! [app-state client-id]
   (assoc-in app-state [:client client-id]
