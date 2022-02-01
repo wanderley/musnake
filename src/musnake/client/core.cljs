@@ -1,150 +1,39 @@
 (ns musnake.client.core
   (:require [chord.client :refer [ws-ch]]
             [cljs.core.async :as async :include-macros true]
+            [musnake.client.server :refer [connect!]]
+            [musnake.shared.model :as m]
             [reagent.core :as reagent :refer [atom]]
             [reagent.dom :as rd]))
 
 (enable-console-print!)
 
-;;; Model
+(def app-state (atom m/client-initial-state))
 
-;;;; Pos
+;;; Server
 
-(defn random-pos! [get-occupied-pos x-min x-max y-min y-max]
-  (loop []
-    (let [x (+ x-min (rand-int (- x-max x-min)))
-          y (+ y-min (rand-int (- y-max y-min)))
-          pos {:x x :y y}]
-      (if (not (contains? get-occupied-pos pos))
-        pos (recur)))))
-
-(defn extract-pos [something]
-  (select-keys something [:x :y]))
-
-(defn pos=? [a b]
-  (= (extract-pos a) (extract-pos b)))
-
-;;;; Object
-
-(defn move-object [pos]
-  {:x (+ (:x pos)
-         (case (:direction pos)
-           left  -1
-           up     0
-           right +1
-           down   0
-           0))
-   :y (+ (:y pos)
-         (case (:direction pos)
-           left   0
-           up    -1
-           right  0
-           down  +1
-           0))
-   :direction (:direction pos)})
-
-;;;; Board
-
-(defn pos->board-pos [p b]
-  {:x (* (:x p) (:cell-size b))
-   :y (* (:y p) (:cell-size b))})
-
-(defn inside-board? [b p]
-  (and (<= 0 (:x p) (dec (:cols b)))
-       (<= 0 (:y p) (dec (:rows b)))))
-
-(defn board-dimensions [b]
-  {:width  (* (:cols b) (:cell-size b))
-   :height (* (:rows b) (:cell-size b))})
-
-;;;; Snake
-
-(defn snake-head [s]
-  (-> s :body first))
-
-(defn grow [s]
-  (assoc s :body (into [(-> s snake-head move-object)]
-                       (:body s))))
-
-(defn move-snake [s]
-  (if (:alive? s)
-    (assoc s :body
-           (into [(-> s snake-head move-object)]
-                 (-> s :body drop-last)))
-    s))
-
-(defn update-snake-alive? [s b]
-  (update s :alive?
-          #(and %
-                (inside-board? b (-> s snake-head))
-                (or (= 1 (-> s :body count))
-                    (nil?
-                     (some #{(-> s snake-head extract-pos)}
-                           (->> s :body rest (map extract-pos))))))))
-
-(defn snake-ate? [s f]
-  (pos=? (get-in s [:body 0]) f))
-
-;;;; App
-
-(def app-state (atom {:snake {:body [{:x 25 :y 25}]
-                              :alive? true}
-                      :food  (random-pos! #{} 0 50 0 50)
-                      :board {:cols 50
-                              :rows 50
-                              :cell-size 10}
-                      :game/settings {:last-frame-timestamp 0
-                                      :latency 150}}))
-
-(defn change-direction [app-state d]
-  (assoc-in app-state [:snake :body 0 :direction] d))
-
-(defn get-occupied-pos [app-state]
-  (set
-   (conj
-    (->> app-state :snake :body (map extract-pos))
-    (-> app-state :food extract-pos))))
-
-(defn maybe-eat! [app-state]
-  (if (and (-> app-state :snake :alive?)
-           (snake-ate? (-> app-state :snake)
-                       (-> app-state :food)))
-    (-> app-state
-        (update :snake grow)
-        (assoc :food (random-pos! (get-occupied-pos app-state)
-                                  ;; TODO Remove hardcode values
-                                  0 50 0 50)))
-    app-state))
-
-(defn toc! [app-state timestamp]
-  (let [last-ts (-> app-state :game/settings :last-frame-timestamp)
-        latency (-> app-state :game/settings :latency)]
-    (if (and timestamp (> (- timestamp last-ts) 150))
-      (-> app-state
-          (assoc-in [:game/settings :last-frame-timestamp] timestamp)
-          (update :snake move-snake)
-          (update :snake update-snake-alive? (:board app-state))
-          (maybe-eat!))
-      app-state)))
-
-;;; Events
-
-(defn emit [fn & params]
-  (swap! app-state #(apply fn (concat [%] params))))
-
-;; This is other way to simulate a game loop.  Doing that, we don't need to
-;; compute the elapsed time, but just fire tick every X miliseconds.  I am not
-;; sure which one is better.
-;; (defonce tick (js/setInterval #(emit toc!) (/ 1000 10)))
-(defn tick [timestamp]
-  (emit toc! timestamp)
-  (.requestAnimationFrame js/window tick))
-(tick nil)
+(defonce incoming-messages (async/chan))
+(defonce outgoing-messages (async/chan))
+(defn server-emit! [& message]
+  (async/put! outgoing-messages message))
+(async/go-loop []
+  (let [message (async/<! incoming-messages)]
+    (case (first message)
+      state (reset! app-state (second message))
+      nil))
+  (recur))
+(connect! (str
+           (case (.. js/document -location -protocol)
+             "https:" "wss:"
+             "ws:")
+           "//" (.. js/document -location -host) "/ws")
+          outgoing-messages
+          incoming-messages)
 
 ;;; Views
 
 (defn object [pos color board]
-  [:rect (into (pos->board-pos pos board)
+  [:rect (into (m/pos->board-pos pos board)
                {:width (:cell-size board) :height (:cell-size board)
                 :fill color})])
 
@@ -160,7 +49,7 @@
 (defn board [{snake    :snake
               board    :board
               food-pos :food}]
-  (let [{:keys [width height]} (board-dimensions board)]
+  (let [{:keys [width height]} (m/board-dimensions board)]
     [:svg {:width  width
            :height height
            :focusable true
@@ -177,7 +66,7 @@
                                       39 'right
                                       40 'down
                                       nil)]
-                         (emit change-direction d))))))}
+                         (server-emit! 'change-direction d))))))}
 
      ;; Background
      [:rect {:x 0 :y 0

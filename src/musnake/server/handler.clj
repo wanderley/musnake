@@ -5,24 +5,56 @@
             [compojure.route :as route]
             [medley.core :refer [random-uuid]]
             [org.httpkit.server :as hk]
-            [ring.util.response :as resp]))
+            [ring.util.response :as resp]
+            [musnake.shared.model :as m]))
+
+;;; Connections
+
+(defonce main-chan (async/chan (async/sliding-buffer 100)))
+(defonce main-mult (async/mult main-chan))
+(defonce connections (atom {}))
 
 ;;; State
 
-(def initial-state {})
-(defonce app-state (atom initial-state))
+(defonce app-state (atom m/server-initial-state))
 
-;;; Communication
+;;; Events
 
-(defonce main-chan (async/chan))
+(defmulti event! (fn [type app-state & params] type))
+(defmacro defevent! [type args & body]
+ `(defmethod ~'event! ~type [~'_ ~@args] (do ~@body)))
 
-(defonce main-mult (async/mult main-chan))
+(defevent! :default [client-id app-state & params] app-state)
+
+(defevent! 'change-direction [client-id direction]
+  (swap! app-state m/change-direction direction))
+
+(defevent! 'connect [client-id]
+  (swap! app-state m/connect! client-id))
+
+(defevent! 'disconnect [client-id]
+  (swap! app-state m/disconnect client-id))
+
+(defn toc! []
+  (async/put! main-chan
+              ['state
+               (swap! app-state m/process-frame)]))
+
+
+(def tic! (future (while true
+                    (do (Thread/sleep 100)
+                        (toc!)))))
+
+;;; Handler
 
 (defn ws-handler
   [req]
   (with-channel req client-channel
     (let [client-tap (async/chan)
           client-id (.toString (random-uuid))]
+      (swap! connections assoc client-id {:channel client-channel
+                                          :tap     client-tap})
+      (event! 'connect client-id)
       (async/tap main-mult client-tap)
       (async/go-loop []
         (async/alt!
@@ -38,13 +70,29 @@
           ([{:keys [message]}]
            (if message
              (do
-               ;; process message
+               (apply event! (concat (list (first message))
+                                     (list client-id)
+                                     (rest message)))
                (recur))
              (do
-               ;; tell clients about disconnection?
-               (async/untap main-mult client-tap)))))))))
+               (async/untap main-mult client-tap)
+               (async/close! client-tap)
+               (swap! connections dissoc client-id)
+               (event! 'disconnect client-id)))))))))
+
+(defn restart-server-handler! [_]
+  (reset! app-state m/server-initial-state)
+  (doseq [[client-id {:keys [channel tap]}] @connections]
+    (async/untap main-mult tap)
+    (async/close! channel)
+    (async/close! tap))
+  (reset! connections {})
+  {:status 200
+   :headers {"Content-Type" "text/plain"}
+   :body    "Server restarted!"})
 
 (defroutes app
+  (GET "/restart" [] restart-server-handler!)
   (GET "/ws" [] ws-handler)
   (GET "/" [] (resp/resource-response "index.html" {:root "public"}))
   (route/resources "/")
