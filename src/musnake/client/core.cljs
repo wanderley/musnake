@@ -92,14 +92,10 @@
                  :-ms-transform "translate(-50%, -50%)"
                  :transform "translate(-50%, -50%)"
                  :border "1px solid black"}}
-   [:center
-    [:h1 "μSnake"]
-    [board @app-state]]
-   [:p (str "Direction:"
-            (get-in @app-state [:snake :python :direction])
-            " Alive?:"
-            (-> @app-state :snake :python :alive?))]
-   [:p (str @app-state)]])
+   [:div
+    [:center
+     [:h1 "μSnake"]
+     [board @app-state]]]])
 
 (rd/render [app] (. js/document (getElementById "app")))
 
