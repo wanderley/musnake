@@ -108,15 +108,6 @@
                ;; TODO Remove hardcode values
                0 50 0 50))
 
-(defn maybe-eat! [app-state]
-  (if (and (-> app-state :snake :alive?)
-           (snake-ate? (-> app-state :snake)
-                       (-> app-state :food)))
-    (-> app-state
-        (update :snake grow)
-        (#(assoc % :food (get-unoccupied-pos! %))))
-    app-state))
-
 (defn snakes-move-and-eat! [app-state]
   (if (empty? (:snakes app-state))
     app-state
