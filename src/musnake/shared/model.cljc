@@ -1,4 +1,5 @@
-(ns musnake.shared.model)
+(ns musnake.shared.model
+  (:require [clojure.test :refer [is deftest]]))
 
 ;;; Model
 
@@ -47,7 +48,7 @@
 (defn snake-head [s]
   (-> s :body first))
 
-(defn grow [s]
+(defn grow-snake [s]
   (assoc s :body (into [(-> s snake-head
                             (move-pos (:direction s)))]
                        (:body s))))
@@ -60,33 +61,50 @@
                  (-> s :body drop-last)))
     s))
 
+(defn snake-touch-itself? [s]
+  (and (> 2 (-> s :body count))
+       (some (-> s snake-head set)
+             (->> s :body rest))))
+
+(defn snake-alive? [s b]
+  (and (inside-board? b (-> s snake-head))
+       (not (snake-touch-itself? s))))
+
+(defn update-snake-alive? [s b]
+  (assoc s :alive? (snake-alive? s b)))
+
+(defn snake-ate? [s f]
+  (= (get-in s [:body 0]) f))
+
 (defn move-snakes [ms]
   (into {}
         (for [[client-id snake] ms]
           [client-id (move-snake snake)])))
-
-(defn update-snake-alive? [s b]
-  (update s :alive?
-          #(and %
-                (inside-board? b (-> s snake-head))
-                (or (= 1 (-> s :body count))
-                    (nil?
-                     (some #{(-> s snake-head)}
-                           (->> s :body rest)))))))
 
 (defn update-snakes-alive? [ms b]
   (into {}
         (for [[client-id snake] ms]
           [client-id (update-snake-alive? snake b)])))
 
-(defn snake-ate? [s f]
-  (= (get-in s [:body 0]) f))
+(deftest test-snake
+  (is (= {:body [{:x 10 :y 10} {:x 10 :y 11}] :direction 'up :alive? true}
+         (grow-snake {:body [{:x 10 :y 11}] :direction 'up :alive? true})))
+
+  (is (= {:body [{:x 10 :y 10}] :direction 'up :alive? true}
+         (move-snake {:body [{:x 10 :y 11}] :direction 'up :alive? true})))
+
+
+  (let [board {:cols 50 :rows 50 :cell-size 10}]
+    (is (= {:body [{:x 10 :y 10}] :direction 'up :alive? true}
+           (update-snake-alive? {:body [{:x 10 :y 10}] :direction 'up :alive? true}
+                                board)))
+    (is (= {:body [{:x 50 :y 10}] :direction 'up :alive? false}
+           (update-snake-alive? {:body [{:x 50 :y 10}] :direction 'up :alive? true} board)))))
 
 ;;;; App
 
 (def client-initial-state
-  {:client {}
-   :snakes {}
+  {:snakes {}
    :food  (random-pos! #{} 0 50 0 50)
    :board {:cols 50
            :rows 50
@@ -119,7 +137,7 @@
            (snake-ate? snake food))
         (-> app-state
             (assoc :snakes (merge
-                            {client-id (grow snake)}
+                            {client-id (grow-snake snake)}
                             (move-snakes others)))
             (#(assoc % :food (get-unoccupied-pos! %))))
         (assoc app-state :snakes
