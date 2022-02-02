@@ -12,30 +12,21 @@
       (if (not (contains? get-occupied-pos pos))
         pos (recur)))))
 
-(defn extract-pos [something]
-  (select-keys something [:x :y]))
-
-(defn pos=? [a b]
-  (= (extract-pos a) (extract-pos b)))
-
-;;;; Object
-
-(defn move-object [pos]
+(defn move-pos [pos d]
   {:x (+ (:x pos)
-         (case (:direction pos)
+         (case d
            left  -1
            up     0
            right +1
            down   0
            0))
    :y (+ (:y pos)
-         (case (:direction pos)
+         (case d
            left   0
            up    -1
            right  0
            down  +1
-           0))
-   :direction (:direction pos)})
+           0))})
 
 ;;;; Board
 
@@ -57,13 +48,15 @@
   (-> s :body first))
 
 (defn grow [s]
-  (assoc s :body (into [(-> s snake-head move-object)]
+  (assoc s :body (into [(-> s snake-head
+                            (move-pos (:direction s)))]
                        (:body s))))
 
 (defn move-snake [s]
   (if (:alive? s)
     (assoc s :body
-           (into [(-> s snake-head move-object)]
+           (into [(-> s snake-head
+                      (move-pos (:direction s)))]
                  (-> s :body drop-last)))
     s))
 
@@ -73,11 +66,11 @@
                 (inside-board? b (-> s snake-head))
                 (or (= 1 (-> s :body count))
                     (nil?
-                     (some #{(-> s snake-head extract-pos)}
-                           (->> s :body rest (map extract-pos))))))))
+                     (some #{(-> s snake-head)}
+                           (->> s :body rest)))))))
 
 (defn snake-ate? [s f]
-  (pos=? (get-in s [:body 0]) f))
+  (= (get-in s [:body 0]) f))
 
 ;;;; App
 
@@ -93,13 +86,13 @@
 (def server-initial-state  client-initial-state)
 
 (defn change-direction [app-state d]
-  (assoc-in app-state [:snake :body 0 :direction] d))
+  (assoc-in app-state [:snake :direction] d))
 
 (defn get-occupied-pos [app-state]
   (set
    (conj
-    (->> app-state :snake :body (map extract-pos))
-    (-> app-state :food extract-pos))))
+    (->> app-state :snake :body)
+    (-> app-state :food))))
 
 (defn get-unoccupied-pos! [app-state]
   (random-pos! (get-occupied-pos app-state)
