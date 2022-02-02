@@ -1,5 +1,6 @@
 (ns musnake.shared.model
-  (:require [clojure.test :refer [is deftest]]))
+  (:require [clojure.test :refer [is deftest]]
+            [medley.core :refer [map-vals]]))
 
 ;;; Model
 
@@ -77,14 +78,10 @@
   (= (get-in s [:body 0]) f))
 
 (defn move-snakes [ms]
-  (into {}
-        (for [[client-id snake] ms]
-          [client-id (move-snake snake)])))
+  (map-vals #(move-snake %) ms))
 
 (defn update-snakes-alive? [ms b]
-  (into {}
-        (for [[client-id snake] ms]
-          [client-id (update-snake-alive? snake b)])))
+  (map-vals #(update-snake-alive? % b) ms))
 
 (deftest test-snake
   (is (= {:body [{:x 10 :y 10} {:x 10 :y 11}] :direction 'up :alive? true}
@@ -154,13 +151,13 @@
                           (assoc app-state :snakes others)))))))))
 
 (defn revive-dead-snakes! [app-state]
-  (assoc app-state :snakes
-         (into {}
-               (for [[client-id snake] (:snakes app-state)]
-                 (if (:alive? snake)
-                   [client-id snake]
-                   [client-id {:body [(get-unoccupied-pos! app-state)]
-                               :alive? true}])))))
+  (update app-state :snakes
+          #(map-vals (fn [snake]
+                       (if (:alive? snake)
+                         snake
+                         {:body [(get-unoccupied-pos! app-state)]
+                          :alive? true}))
+                     %)))
 
 (defn process-frame [app-state]
   (-> app-state
