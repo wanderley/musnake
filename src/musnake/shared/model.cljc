@@ -103,10 +103,10 @@
            :direction 'up :alive? true})))
 
   (let [board {:cols 50 :rows 50 :cell-size 10}]
-    (is (= {:body [{:x 10 :y 10}] :direction 'up :alive? true}
-           (update-snake-alive? {:body [{:x 10 :y 10}] :direction 'up :alive? true} board)))
-    (is (= {:body [{:x 50 :y 10}] :direction 'up :alive? false}
-           (update-snake-alive? {:body [{:x 50 :y 10}] :direction 'up :alive? true} board)))))
+    (is (= true
+           (snake-alive? {:body [{:x 10 :y 10}] :direction 'up :alive? true} board)))
+    (is (= false
+           (snake-alive? {:body [{:x 50 :y 10}] :direction 'up :alive? true} board)))))
 
 ;;;; App
 
