@@ -56,6 +56,7 @@
       (swap! connections assoc client-id {:channel client-channel
                                           :tap     client-tap})
       (event! 'connect client-id)
+      (async/put! client-channel ['client-id client-id])
       (async/tap main-mult client-tap)
       (async/go-loop []
         (async/alt!

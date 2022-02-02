@@ -19,7 +19,8 @@
 (async/go-loop []
   (let [message (async/<! incoming-messages)]
     (case (first message)
-      state (reset! app-state (second message))
+      state (swap! app-state merge (second message))
+      client-id (swap! app-state assoc :client-id (second message))
       nil))
   (recur))
 (connect! (str
@@ -40,15 +41,16 @@
 (defn food [food board]
   [object food "green" board])
 
-(defn snake-body [snake board]
+(defn snake-body [snake color board]
   (into
    [:svg]
    (for [o (:body snake)]
-     [object o "red" board])))
+     [object o color board])))
 
-(defn board [{snakes   :snakes
-              board    :board
-              food-pos :food}]
+(defn board [{client-id :client-id
+              snakes    :snakes
+              board     :board
+              food-pos  :food}]
   (let [{:keys [width height]} (m/board-dimensions board)]
     (into [:svg {:width  width
                  :height height
@@ -77,8 +79,10 @@
 
            ;; Objects
            [food food-pos board]]
-          (for [[client-id snake] snakes]
-            [snake-body snake board]))))
+          (for [[id snake] snakes]
+            [snake-body snake (if (= id client-id)
+                                "blue""red")
+             board]))))
 
 (defn app []
   [:div {:style {:margin "0"
