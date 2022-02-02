@@ -46,38 +46,39 @@
    (for [o (:body snake)]
      [object o "red" board])))
 
-(defn board [{snake    :snake
+(defn board [{snakes   :snakes
               board    :board
               food-pos :food}]
   (let [{:keys [width height]} (m/board-dimensions board)]
-    [:svg {:width  width
-           :height height
-           :focusable true
-           :tabIndex 0
-           :ref (fn [el]
-                  (when el
-                    (.addEventListener
-                     el "keydown"
-                     (fn [ke]
-                       (.preventDefault ke)
-                       (when-let [d (case (-> ke .-keyCode)
-                                      37 'left
-                                      38 'up
-                                      39 'right
-                                      40 'down
-                                      nil)]
-                         (server-emit! 'change-direction d))))))}
+    (into [:svg {:width  width
+                 :height height
+                 :focusable true
+                 :tabIndex 0
+                 :ref (fn [el]
+                        (when el
+                          (.addEventListener
+                           el "keydown"
+                           (fn [ke]
+                             (.preventDefault ke)
+                             (when-let [d (case (-> ke .-keyCode)
+                                            37 'left
+                                            38 'up
+                                            39 'right
+                                            40 'down
+                                            nil)]
+                               (server-emit! 'change-direction d))))))}
 
-     ;; Background
-     [:rect {:x 0 :y 0
-             :width width
-             :height height
-             :fill "white"
-             :stroke "black"}]
+           ;; Background
+           [:rect {:x 0 :y 0
+                   :width width
+                   :height height
+                   :fill "white"
+                   :stroke "black"}]
 
-     ;; Objects
-     [snake-body snake      board]
-     [food       food-pos   board]]))
+           ;; Objects
+           [food food-pos board]]
+          (for [[client-id snake] snakes]
+            [snake-body snake board]))))
 
 (defn app []
   [:div {:style {:margin "0"
@@ -91,9 +92,9 @@
     [:h1 "μSnake"]
     [board @app-state]]
    [:p (str "Direction:"
-            (get-in @app-state [:snake :direction])
+            (get-in @app-state [:snake :python :direction])
             " Alive?:"
-            (-> @app-state :snake :alive?))]
+            (-> @app-state :snake :python :alive?))]
    [:p (str @app-state)]])
 
 (rd/render [app] (. js/document (getElementById "app")))

@@ -60,6 +60,11 @@
                  (-> s :body drop-last)))
     s))
 
+(defn move-snakes [ms]
+  (into {}
+        (for [[client-id snake] ms]
+          [client-id (move-snake snake)])))
+
 (defn update-snake-alive? [s b]
   (update s :alive?
           #(and %
@@ -69,6 +74,11 @@
                      (some #{(-> s snake-head)}
                            (->> s :body rest)))))))
 
+(defn update-snakes-alive? [ms b]
+  (into {}
+        (for [[client-id snake] ms]
+          [client-id (update-snake-alive? snake b)])))
+
 (defn snake-ate? [s f]
   (= (get-in s [:body 0]) f))
 
@@ -76,8 +86,7 @@
 
 (def client-initial-state
   {:client {}
-   :snake {:body [{:x 25 :y 25}]
-           :alive? true}
+   :snakes {}
    :food  (random-pos! #{} 0 50 0 50)
    :board {:cols 50
            :rows 50
@@ -85,8 +94,8 @@
 
 (def server-initial-state  client-initial-state)
 
-(defn change-direction [app-state d]
-  (assoc-in app-state [:snake :direction] d))
+(defn change-direction [app-state client-id d]
+  (assoc-in app-state [:snakes client-id :direction] d))
 
 (defn get-occupied-pos [app-state]
   (set
@@ -108,23 +117,54 @@
         (#(assoc % :food (get-unoccupied-pos! %))))
     app-state))
 
-(defn maybe-restart [app-state]
-  (if (-> app-state :snake :alive?)
+(defn snakes-move-and-eat! [app-state]
+  (if (empty? (:snakes app-state))
     app-state
-    (assoc app-state :snake (:snake client-initial-state))))
+    (let [[client-id snake] (-> app-state :snakes first)
+          others (->> app-state :snakes rest (into {}))
+          food (-> app-state :food)]
+      (if (and
+           (:alive? snake)
+           (snake-ate? snake food))
+        (-> app-state
+            (assoc :snakes (merge
+                            {client-id (grow snake)}
+                            (move-snakes others)))
+            (#(assoc % :food (get-unoccupied-pos! %))))
+        (assoc app-state :snakes
+               (merge
+                {client-id (move-snake snake)}
+                (:snakes (snakes-move-and-eat!
+                          (assoc app-state :snakes others)))))))))
+
+(defn revive-dead-snakes! [app-state]
+  (assoc app-state :snakes
+         (into {}
+               (for [[client-id snake] (:snakes app-state)]
+                 (if (:alive? snake)
+                   [client-id snake]
+                   [client-id {:body [(get-unoccupied-pos! app-state)]
+                               :alive? true}])))))
 
 (defn process-frame [app-state]
   (-> app-state
-      (update :snake move-snake)
-      (update :snake update-snake-alive? (:board app-state))
-      (maybe-eat!)
-      (maybe-restart)))
+      (update :snakes update-snakes-alive? (:board app-state))
+      snakes-move-and-eat!
+      revive-dead-snakes!))
+
+
+(comment
+  (-> {:snake {:body [{:x 25 :y 25}] :alive? true}
+       :snakes {:python {:body [{:x 8 :y 46}] :alive? true :direction 'up}}
+       :food {:x 8 :y 46}
+       :board {:cols 50 :rows 50 :cell-size 10}}
+      process-frame))
+
 
 (defn connect! [app-state client-id]
-  (assoc-in app-state [:client client-id]
-            {:body [{:x 25 :y 25}]
-             :alive? true})
-  app-state)
+  (assoc-in app-state [:snakes client-id]
+            {:body [(get-unoccupied-pos! app-state)]
+             :alive? true}))
 
 (defn disconnect [app-state client-id]
-  app-state)
+  (assoc app-state :snakes (dissoc (:snakes app-state) client-id)))

@@ -27,7 +27,7 @@
 (defevent! :default [client-id app-state & params] app-state)
 
 (defevent! 'change-direction [client-id direction]
-  (swap! app-state m/change-direction direction))
+  (swap! app-state m/change-direction client-id direction))
 
 (defevent! 'connect [client-id]
   (swap! app-state m/connect! client-id))
