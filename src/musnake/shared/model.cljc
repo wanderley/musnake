@@ -62,9 +62,9 @@
     s))
 
 (defn snake-touch-itself? [s]
-  (and (> 2 (-> s :body count))
-       (some (-> s snake-head set)
-             (->> s :body rest))))
+  (and (> (-> s :body count) 2)
+       (some? (some #{(-> s snake-head)}
+                    (-> s :body rest)))))
 
 (defn snake-alive? [s b]
   (and (inside-board? b (-> s snake-head))
@@ -93,11 +93,18 @@
   (is (= {:body [{:x 10 :y 10}] :direction 'up :alive? true}
          (move-snake {:body [{:x 10 :y 11}] :direction 'up :alive? true})))
 
+  (is (= false
+         (snake-touch-itself?
+          {:body [{:x 10 :y 10} {:x 10 :y 11}]
+           :direction 'up :alive? true})))
+  (is (= true
+         (snake-touch-itself?
+          {:body [{:x 10 :y 10} {:x 10 :y 10} {:x 10 :y 11}]
+           :direction 'up :alive? true})))
 
   (let [board {:cols 50 :rows 50 :cell-size 10}]
     (is (= {:body [{:x 10 :y 10}] :direction 'up :alive? true}
-           (update-snake-alive? {:body [{:x 10 :y 10}] :direction 'up :alive? true}
-                                board)))
+           (update-snake-alive? {:body [{:x 10 :y 10}] :direction 'up :alive? true} board)))
     (is (= {:body [{:x 50 :y 10}] :direction 'up :alive? false}
            (update-snake-alive? {:body [{:x 50 :y 10}] :direction 'up :alive? true} board)))))
 
