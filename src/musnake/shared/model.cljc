@@ -35,10 +35,6 @@
   (and (<= 0 (:x p) (dec (:cols b)))
        (<= 0 (:y p) (dec (:rows b)))))
 
-(defn board-dimensions [b]
-  {:width  (* (:cols b) (:cell-size b))
-   :height (* (:rows b) (:cell-size b))})
-
 ;;;; Snake
 
 (defn snake-head [s]

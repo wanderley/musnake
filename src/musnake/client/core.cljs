@@ -51,46 +51,49 @@
               snakes    :snakes
               board     :board
               food-pos  :food}]
-  (let [{:keys [width height]} (m/board-dimensions board)]
-    (into [:svg {:width  width
-                 :height height
-                 :focusable true
-                 :tabIndex 0
-                 :background "lightyellow"
-                 :ref (fn [el]
-                        (when el
-                          (.addEventListener
-                           el "keydown"
-                           (fn [ke]
-                             (.preventDefault ke)
-                             (when-let [d (case (-> ke .-keyCode)
-                                            37 'left
-                                            38 'up
-                                            39 'right
-                                            40 'down
-                                            nil)]
-                               (server-emit! 'change-direction d))))))}
+  [:div {:style {:padding "1em"}}
+   (into [:svg {:width  "100%"
+                :height "100%"
+                :viewBox "0 0 500 500"
+                :preserveAspectRatio "xMidYMid meet"
+                :focusable true
+                :tabIndex 0
+                :background "lightyellow"
+                :ref (fn [el]
+                       (when el
+                         (.addEventListener
+                          el "keydown"
+                          (fn [ke]
+                            (.preventDefault ke)
+                            (when-let [d (case (-> ke .-keyCode)
+                                           37 'left
+                                           38 'up
+                                           39 'right
+                                           40 'down
+                                           nil)]
+                              (server-emit! 'change-direction d))))))}
 
-           ;; Background
-           [:rect {:x 0 :y 0
-                   :width width
-                   :height height
-                   :fill "lightyellow"}]
+          ;; Background
+          [:rect {:x 0 :y 0
+                  :width "100%"
+                  :height "100%"
+                  :fill "lightyellow"}]
 
-           ;; Objects
-           [food food-pos board]]
-          (for [[id snake] snakes]
-            [snake-body snake (if (= id client-id)
-                                "blue""red")
-             board]))))
+          ;; Objects
+          [food food-pos board]]
+         (for [[id snake] snakes]
+           [snake-body snake (if (= id client-id)
+                               "blue""red")
+            board]))])
 
 (defn app []
   [:div {:style {:margin "0"
                  :position "absolute"
                  :background "lightgreen"
-                 :padding "15px"
                  :top "50%"
                  :left "50%"
+                 :width "100%"
+                 :max-width "500px"
                  :-ms-transform "translate(-50%, -50%)"
                  :transform "translate(-50%, -50%)"
                  :border "1px solid black"}}
