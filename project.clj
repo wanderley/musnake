@@ -1,6 +1,6 @@
-(defproject musnake "0.1.0-SNAPSHOT"
+(defproject musnake "0.1.0"
   :description "A Multiplayer Snake game for you to have fun with your friends!"
-  :url "http://example.com/FIXME"
+  :url "https://musnake.herokuapp.com/"
   :license {:name "MIT License"
             :url "https://opensource.org/licenses/MIT"}
 
