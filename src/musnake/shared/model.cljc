@@ -131,24 +131,19 @@
                0 50 0 50))
 
 (defn snakes-move-and-eat! [app-state]
-  (if (empty? (:snakes app-state))
-    app-state
-    (let [[client-id snake] (-> app-state :snakes first)
-          others (->> app-state :snakes rest (into {}))
-          food (-> app-state :food)]
-      (if (and
-           (:alive? snake)
-           (snake-ate? snake food))
-        (-> app-state
-            (assoc :snakes (merge
-                            {client-id (grow-snake snake)}
-                            (move-snakes others)))
-            (#(assoc % :food (get-unoccupied-pos! %))))
-        (assoc app-state :snakes
-               (merge
-                {client-id (move-snake snake)}
-                (:snakes (snakes-move-and-eat!
-                          (assoc app-state :snakes others)))))))))
+  (let [{:keys [ate starving]}
+        (group-by #(if (and (:alive? (val %))
+                            (snake-ate? (val %)
+                                        (:food app-state)))
+                     :ate :starving)
+                  (:snakes app-state))]
+    (-> app-state
+        (update :food
+                #(if (empty? ate) % (get-unoccupied-pos! app-state)))
+        (assoc  :snakes
+                (merge
+                 (map-vals grow-snake (into {} ate))
+                 (map-vals move-snake (into {} starving)))))))
 
 (defn revive-dead-snakes! [app-state]
   (update app-state :snakes
