@@ -87,6 +87,13 @@
                                              nil)]
                                 (server-emit! 'change-direction d))))
                            (.addEventListener
+                            el "touchstart"
+                            (fn [to]
+                              (.preventDefault to)
+                              (let [curr-touch {:x (-> to .-targetTouches last .-pageX)
+                                                :y (-> to .-targetTouches last .-pageY)}]
+                                (reset! last-touch curr-touch))))
+                           (.addEventListener
                             el "touchmove"
                             (fn [to]
                               (.preventDefault to)
@@ -94,8 +101,7 @@
                                                 :y (-> to .-targetTouches last .-pageY)}]
                                 (when-let [d (touch-move->direction
                                               (or @last-touch curr-touch) curr-touch)]
-                                  (server-emit! 'change-direction d))
-                                (reset! last-touch curr-touch))))))}
+                                  (server-emit! 'change-direction d)))))))}
 
             ;; Background
             [:rect {:x 0 :y 0
