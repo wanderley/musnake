@@ -13,8 +13,8 @@
 
 ;;; Server
 
-(defonce incoming-messages (async/chan))
-(defonce outgoing-messages (async/chan))
+(defonce incoming-messages (async/chan (async/sliding-buffer 10)))
+(defonce outgoing-messages (async/chan (async/sliding-buffer 10)))
 (defn server-emit! [& message]
   (async/put! outgoing-messages message))
 (async/go-loop []

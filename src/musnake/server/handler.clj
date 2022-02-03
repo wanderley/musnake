@@ -10,7 +10,7 @@
 
 ;;; Connections
 
-(defonce main-chan (async/chan (async/sliding-buffer 100)))
+(defonce main-chan (async/chan (async/sliding-buffer 10)))
 (defonce main-mult (async/mult main-chan))
 (defonce connections (atom {}))
 
@@ -51,7 +51,7 @@
 (defn ws-handler
   [req]
   (with-channel req client-channel
-    (let [client-tap (async/chan)
+    (let [client-tap (async/chan (async/sliding-buffer 10))
           client-id (.toString (random-uuid))]
       (swap! connections assoc client-id {:channel client-channel
                                           :tap     client-tap})
