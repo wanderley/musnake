@@ -56,6 +56,7 @@
                  :height height
                  :focusable true
                  :tabIndex 0
+                 :background "lightyellow"
                  :ref (fn [el]
                         (when el
                           (.addEventListener
@@ -74,8 +75,7 @@
            [:rect {:x 0 :y 0
                    :width width
                    :height height
-                   :fill "white"
-                   :stroke "black"}]
+                   :fill "lightyellow"}]
 
            ;; Objects
            [food food-pos board]]
@@ -87,15 +87,16 @@
 (defn app []
   [:div {:style {:margin "0"
                  :position "absolute"
+                 :background "lightgreen"
+                 :padding "15px"
                  :top "50%"
                  :left "50%"
                  :-ms-transform "translate(-50%, -50%)"
                  :transform "translate(-50%, -50%)"
                  :border "1px solid black"}}
-   [:div
-    [:center
-     [:h1 "μSnake"]
-     [board @app-state]]]])
+   [:center
+    [:h1 "μSnake"]
+    [board @app-state]]])
 
 (rd/render [app] (. js/document (getElementById "app")))
 
