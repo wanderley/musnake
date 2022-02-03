@@ -19,6 +19,7 @@
             [lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]]
 
   :source-paths ["src"]
+  :test-paths ["src"]
   :uberjar-name "musnake-standalone.jar"
   :resource-paths ["resources"]
 
