@@ -6,13 +6,8 @@
 
 ;;;; Pos
 
-(defn random-pos! [get-occupied-pos x-min x-max y-min y-max]
-  (loop []
-    (let [x (+ x-min (rand-int (- x-max x-min)))
-          y (+ y-min (rand-int (- y-max y-min)))
-          pos {:x x :y y}]
-      (if (not (contains? get-occupied-pos pos))
-        pos (recur)))))
+(defn random-pos! [cols rows]
+  {:x (rand-int cols) :y (rand-int rows)})
 
 (defn move-pos [pos d]
   {:x (+ (:x pos)
@@ -109,7 +104,7 @@
 
 (def client-initial-state
   {:snakes {}
-   :food  (random-pos! #{} 0 50 0 50)
+   :food  (random-pos! 50 50)
    :board {:cols 50
            :rows 50
            :cell-size 10}})
@@ -129,9 +124,13 @@
        set))
 
 (defn get-unoccupied-pos! [app-state]
-  (random-pos! (get-occupied-pos app-state)
-               ;; TODO Remove hardcode values
-               0 50 0 50))
+  (let [occuppied-pos (get-occupied-pos app-state)]
+    (first
+     (filter
+      #(not (contains? occuppied-pos %))
+      (repeatedly #(identity
+                    (random-pos! (-> app-state :board :cols)
+                                 (-> app-state :board :rows))))))))
 
 (defn snakes-move-and-eat! [app-state]
   (let [{:keys [ate starving]}
