@@ -107,8 +107,21 @@
 
 (def server-initial-state  client-initial-state)
 
+(defn opposite-direction [d]
+  (case d
+    left  'right
+    up    'down
+    right 'left
+    down  'up
+    nil))
+
 (defn change-direction [app-state client-id d]
-  (assoc-in app-state [:snakes client-id :direction] d))
+  (let [op (-> app-state
+               (get-in [:snakes client-id :direction])
+               opposite-direction)]
+    (if (= d op)
+      app-state
+      (assoc-in app-state [:snakes client-id :direction] d))))
 
 (defn get-occupied-pos [app-state]
   (->> app-state
