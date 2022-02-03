@@ -1,6 +1,7 @@
 (ns musnake.client.core
   (:require [chord.client :refer [ws-ch]]
             [cljs.core.async :as async :include-macros true]
+            [medley.core :refer [abs]]
             [musnake.client.server :refer [connect!]]
             [musnake.shared.model :as m]
             [reagent.core :as reagent :refer [atom]]
@@ -47,44 +48,67 @@
    (for [o (:body snake)]
      [object o color board])))
 
+(defn touch-move->direction [from to]
+  (let [{x1 :x y1 :y} from
+        {x2 :x y2 :y} to
+        dx (- x2 x1)
+        dy (- y2 y1)
+        udx (abs dx)
+        udy (abs dy)]
+    (cond
+      (< udx udy) (if (neg? dy) 'up 'down)
+      (< udy udx) (if (neg? dx) 'left 'right)
+      :else       nil)))
+
 (defn board [{client-id :client-id
               snakes    :snakes
               board     :board
               food-pos  :food}]
-  [:div {:style {:padding "1em"}}
-   (into [:svg {:width  "100%"
-                :height "100%"
-                :viewBox "0 0 500 500"
-                :preserveAspectRatio "xMidYMid meet"
-                :focusable true
-                :tabIndex 0
-                :background "lightyellow"
-                :ref (fn [el]
-                       (when el
-                         (.addEventListener
-                          el "keydown"
-                          (fn [ke]
-                            (.preventDefault ke)
-                            (when-let [d (case (-> ke .-keyCode)
-                                           37 'left
-                                           38 'up
-                                           39 'right
-                                           40 'down
-                                           nil)]
-                              (server-emit! 'change-direction d))))))}
-
-          ;; Background
-          [:rect {:x 0 :y 0
-                  :width "100%"
+  (let [last-touch (atom nil)]
+    [:div {:style {:padding "1em"}}
+     (into [:svg {:width  "100%"
                   :height "100%"
-                  :fill "lightyellow"}]
+                  :viewBox "0 0 500 500"
+                  :preserveAspectRatio "xMidYMid meet"
+                  :focusable true
+                  :tabIndex 0
+                  :background "lightyellow"
+                  :ref (fn [el]
+                         (when el
+                           (.addEventListener
+                            el "keydown"
+                            (fn [ke]
+                              (.preventDefault ke)
+                              (when-let [d (case (-> ke .-keyCode)
+                                             37 'left
+                                             38 'up
+                                             39 'right
+                                             40 'down
+                                             nil)]
+                                (server-emit! 'change-direction d))))
+                           (.addEventListener
+                            el "touchmove"
+                            (fn [to]
+                              (.preventDefault to)
+                              (let [curr-touch {:x (-> to .-targetTouches last .-pageX)
+                                                :y (-> to .-targetTouches last .-pageY)}]
+                                (when-let [d (touch-move->direction
+                                              (or @last-touch curr-touch) curr-touch)]
+                                  (server-emit! 'change-direction d))
+                                (reset! last-touch curr-touch))))))}
 
-          ;; Objects
-          [food food-pos board]]
-         (for [[id snake] snakes]
-           [snake-body snake (if (= id client-id)
-                               "blue""red")
-            board]))])
+            ;; Background
+            [:rect {:x 0 :y 0
+                    :width "100%"
+                    :height "100%"
+                    :fill "lightyellow"}]
+
+            ;; Objects
+            [food food-pos board]]
+           (for [[id snake] snakes]
+             [snake-body snake (if (= id client-id)
+                                 "blue" "red")
+              board]))]))
 
 (defn app []
   [:div {:style {:margin "0"
@@ -92,7 +116,7 @@
                  :background "lightgreen"
                  :top "50%"
                  :left "50%"
-                 :width "100%"
+                 :width "90%"
                  :max-width "500px"
                  :-ms-transform "translate(-50%, -50%)"
                  :transform "translate(-50%, -50%)"
