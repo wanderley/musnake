@@ -120,10 +120,13 @@
   (assoc-in app-state [:snakes client-id :direction] d))
 
 (defn get-occupied-pos [app-state]
-  (set
-   (conj
-    (->> app-state :snake :body)
-    (-> app-state :food))))
+  (->> app-state
+       :snakes
+       vals
+       (map :body)
+       flatten
+       (concat (-> app-state :food list))
+       set))
 
 (defn get-unoccupied-pos! [app-state]
   (random-pos! (get-occupied-pos app-state)
@@ -160,14 +163,12 @@
       snakes-move-and-eat!
       revive-dead-snakes!))
 
-
 (comment
   (-> {:snake {:body [{:x 25 :y 25}] :alive? true}
        :snakes {:python {:body [{:x 8 :y 46}] :alive? true :direction 'up}}
        :food {:x 8 :y 46}
        :board {:cols 50 :rows 50 :cell-size 10}}
       process-frame))
-
 
 (defn connect! [app-state client-id]
   (assoc-in app-state [:snakes client-id]
@@ -176,3 +177,11 @@
 
 (defn disconnect [app-state client-id]
   (assoc app-state :snakes (dissoc (:snakes app-state) client-id)))
+
+(deftest test-app-state
+  (is (= (get-occupied-pos
+          {:snakes {:python {:body [{:x 8 :y 44} {:x 8 :y 45}] :alive? true :direction 'up}
+                    :ratlle {:body [{:x 10 :y 10} {:x 11 :y 11}] :alive? true :direction 'up}}
+           :food {:x 8 :y 46}
+           :board {:cols 50 :rows 50 :cell-size 10}})
+         #{{:x 8, :y 45} {:x 8, :y 46} {:x 10, :y 10} {:x 11, :y 11} {:x 8, :y 44}})))
