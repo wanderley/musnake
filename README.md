@@ -1,5 +1,7 @@
 # μSnake
 
+[![Build](https://github.com/wanderley/musnake/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/wanderley/musnake/actions/workflows/ci.yml)
+
 Not much to say besides that **this is a Multiplayer Snake game**.  Fire up the server and have fun with your friends or [**PLAY ONLINE!!**](https://musnake.herokuapp.com/)
 
 ## Setup and Development
