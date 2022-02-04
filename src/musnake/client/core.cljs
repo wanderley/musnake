@@ -48,6 +48,10 @@
    (for [o (:body snake)]
      [object o color board])))
 
+(defn touch-event->pos [te]
+  {:x (-> te .-targetTouches last .-pageX)
+   :y (-> te .-targetTouches last .-pageY)})
+
 (defn touch-move->direction [from to]
   (let [{x1 :x y1 :y} from
         {x2 :x y2 :y} to
@@ -88,17 +92,15 @@
                                 (server-emit! 'change-direction d))))
                            (.addEventListener
                             el "touchstart"
-                            (fn [to]
-                              (.preventDefault to)
-                              (let [curr-touch {:x (-> to .-targetTouches last .-pageX)
-                                                :y (-> to .-targetTouches last .-pageY)}]
+                            (fn [from]
+                              (.preventDefault from)
+                              (let [curr-touch (touch-event->pos from)]
                                 (reset! last-touch curr-touch))))
                            (.addEventListener
                             el "touchmove"
                             (fn [to]
                               (.preventDefault to)
-                              (let [curr-touch {:x (-> to .-targetTouches last .-pageX)
-                                                :y (-> to .-targetTouches last .-pageY)}]
+                              (let [curr-touch (touch-event->pos to)]
                                 (when-let [d (touch-move->direction
                                               (or @last-touch curr-touch) curr-touch)]
                                   (server-emit! 'change-direction d)))))))}
