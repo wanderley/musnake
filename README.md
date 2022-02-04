@@ -4,6 +4,8 @@
 
 Not much to say besides that **this is a Multiplayer Snake game**.  Fire up the server and have fun with your friends or [**PLAY ONLINE!!**](https://musnake.herokuapp.com/)
 
+![](screenshot.jpg "Screenshot")
+
 ## Setup and Development
 
 To get an interactive development environment run:
