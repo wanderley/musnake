@@ -43,57 +43,63 @@
   (let [last-touch (atom nil)
         last-key   (atom nil)
         svg-ref-with-listener (atom nil)]
-    [:div {:style {:width     "90%"
-                   :max-width "500px"}}
-     [:div {:style {:padding   "1em"}}
-      (into [:svg {:width  "100%"
-                   :height "100%"
-                   :viewBox "0 0 500 500"
-                   :preserveAspectRatio "xMidYMid meet"
-                   :focusable "true"
-                   :tabIndex 0
-                   :background "lightyellow"
-                   :ref (fn [el]
-                          (when el
-                            (.addEventListener
-                             el "keydown"
-                             (fn [ke]
-                               (.preventDefault ke)
-                               (println "keydown" ke)
-                               (when-let [d (case (-> ke .-keyCode)
-                                              37 'left
-                                              38 'up
-                                              39 'right
-                                              40 'down
-                                              nil)]
-                                 (on-change-direction d))))
-                            (.addEventListener
-                             el "touchstart"
-                             (fn [from]
-                               (.preventDefault from)
-                               (let [curr-touch (touch-event->pos from)]
-                                 (reset! last-touch curr-touch))))
-                            (.addEventListener
-                             el "touchmove"
-                             (fn [to]
-                               (.preventDefault to)
-                               (let [curr-touch (touch-event->pos to)]
-                                 (when-let [d (touch-move->direction
-                                               (or @last-touch curr-touch) curr-touch)]
-                                   (on-change-direction d)))))))}
-
-             ;; Background
-             [:rect {:x 0 :y 0
-                     :width "100%"
+    (fn [{client-id :client-id
+          snakes    :snakes
+          board     :board
+          food-pos  :food}
+         on-change-direction]
+      [:div {:style {:width     "90%"
+                     :max-width "500px"}}
+       [:div {:style {:padding   "1em"}}
+        (into [:svg {:width  "100%"
                      :height "100%"
-                     :fill "lightyellow"}]
+                     :viewBox "0 0 500 500"
+                     :preserveAspectRatio "xMidYMid meet"
+                     :focusable "true"
+                     :tabIndex 0
+                     :background "lightyellow"
+                     :ref (fn [el]
+                            (when (and el (not (= el @svg-ref-with-listener)))
+                              (.addEventListener
+                               el "keydown"
+                               (fn [ke]
+                                 (.preventDefault ke)
+                                 (println "keydown" ke)
+                                 (when-let [d (case (-> ke .-keyCode)
+                                                37 'left
+                                                38 'up
+                                                39 'right
+                                                40 'down
+                                                nil)]
+                                   (on-change-direction d))))
+                              (.addEventListener
+                               el "touchstart"
+                               (fn [from]
+                                 (.preventDefault from)
+                                 (let [curr-touch (touch-event->pos from)]
+                                   (reset! last-touch curr-touch))))
+                              (.addEventListener
+                               el "touchmove"
+                               (fn [to]
+                                 (.preventDefault to)
+                                 (let [curr-touch (touch-event->pos to)]
+                                   (when-let [d (touch-move->direction
+                                                 (or @last-touch curr-touch) curr-touch)]
+                                     (on-change-direction d)))))
+                              (reset! svg-ref-with-listener el)))}
 
-             ;; Objects
-             [food food-pos board]]
-            (for [[id snake] snakes]
-              [snake-body snake (if (= id client-id)
-                                  "blue" "red")
-               board]))]]))
+               ;; Background
+               [:rect {:x 0 :y 0
+                       :width "100%"
+                       :height "100%"
+                       :fill "lightyellow"}]
+
+               ;; Objects
+               [food food-pos board]]
+              (for [[id snake] snakes]
+                [snake-body snake (if (= id client-id)
+                                    "blue" "red")
+                 board]))]])))
 
 
 (defcard empty-board
