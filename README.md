@@ -10,9 +10,9 @@ Not much to say besides that **this is a Multiplayer Snake game**.  Fire up the 
 
 To get an interactive development environment run:
 
-    lein figwheel
+    lein figwheel dev cards
 
-and open your browser at [localhost:3449](http://localhost:3449/).  This will auto compile and send all changes to the browser without the need to reload. After the compilation process is complete, you will get a Browser Connected REPL. An easy way to try it is:
+and open two pages on your browser: [index.html](http://localhost:3449/index.html) and [cards.html](http://localhost:3449/cards).  The first one is the game and the other is reference card for each UI component in the game.  Lein will auto compile and send all changes to the browser without the need to reload. After the compilation process is complete, you will get a Browser Connected REPL. An easy way to try it is:
 
     (js/alert "Am I connected?")
 

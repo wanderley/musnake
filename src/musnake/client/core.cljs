@@ -4,6 +4,7 @@
             [medley.core :refer [abs]]
             [musnake.client.server :refer [connect!]]
             [musnake.shared.model :as m]
+            [musnake.client.views :refer [board]]
             [reagent.core :as reagent :refer [atom]]
             [reagent.dom :as rd]))
 
@@ -34,90 +35,6 @@
 
 ;;; Views
 
-(defn object [pos color board]
-  [:rect (into (m/pos->board-pos pos board)
-               {:width (:cell-size board) :height (:cell-size board)
-                :fill color})])
-
-(defn food [food board]
-  [object food "green" board])
-
-(defn snake-body [snake color board]
-  (into
-   [:svg]
-   (for [o (:body snake)]
-     [object o color board])))
-
-(defn touch-event->pos [te]
-  {:x (-> te .-targetTouches last .-pageX)
-   :y (-> te .-targetTouches last .-pageY)})
-
-(defn touch-move->direction [from to]
-  (let [{x1 :x y1 :y} from
-        {x2 :x y2 :y} to
-        dx (- x2 x1)
-        dy (- y2 y1)
-        udx (abs dx)
-        udy (abs dy)]
-    (cond
-      (< udx udy) (if (neg? dy) 'up 'down)
-      (< udy udx) (if (neg? dx) 'left 'right)
-      :else       nil)))
-
-(defn board [{client-id :client-id
-              snakes    :snakes
-              board     :board
-              food-pos  :food}]
-  (let [last-touch (atom nil)]
-    [:div {:style {:padding "1em"}}
-     (into [:svg {:width  "100%"
-                  :height "100%"
-                  :viewBox "0 0 500 500"
-                  :preserveAspectRatio "xMidYMid meet"
-                  :focusable true
-                  :tabIndex 0
-                  :background "lightyellow"
-                  :ref (fn [el]
-                         (when el
-                           (.addEventListener
-                            el "keydown"
-                            (fn [ke]
-                              (.preventDefault ke)
-                              (when-let [d (case (-> ke .-keyCode)
-                                             37 'left
-                                             38 'up
-                                             39 'right
-                                             40 'down
-                                             nil)]
-                                (server-emit! 'change-direction d))))
-                           (.addEventListener
-                            el "touchstart"
-                            (fn [from]
-                              (.preventDefault from)
-                              (let [curr-touch (touch-event->pos from)]
-                                (reset! last-touch curr-touch))))
-                           (.addEventListener
-                            el "touchmove"
-                            (fn [to]
-                              (.preventDefault to)
-                              (let [curr-touch (touch-event->pos to)]
-                                (when-let [d (touch-move->direction
-                                              (or @last-touch curr-touch) curr-touch)]
-                                  (server-emit! 'change-direction d)))))))}
-
-            ;; Background
-            [:rect {:x 0 :y 0
-                    :width "100%"
-                    :height "100%"
-                    :fill "lightyellow"}]
-
-            ;; Objects
-            [food food-pos board]]
-           (for [[id snake] snakes]
-             [snake-body snake (if (= id client-id)
-                                 "blue" "red")
-              board]))]))
-
 (defn app []
   [:div {:style {:margin "0"
                  :position "absolute"
@@ -131,7 +48,7 @@
                  :border "1px solid black"}}
    [:center
     [:h1 "μSnake"]
-    [board @app-state]]])
+    [board @app-state #(server-emit! 'change-direction %)]]])
 
 (rd/render [app] (. js/document (getElementById "app")))
 

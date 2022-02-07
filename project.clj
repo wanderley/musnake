@@ -10,6 +10,7 @@
                  [org.clojure/clojurescript "1.10.773"]
                  [org.clojure/core.async  "0.4.500"]
                  [compojure "1.6.1"]
+                 [devcards "0.2.7"]
                  [http-kit "2.5.3"]
                  [jarohen/chord "0.8.1"]
                  [medley "1.3.0"]
@@ -45,6 +46,17 @@
                            ;; To console.log CLJS data-structures make sure you enable devtools in Chrome
                            ;; https://github.com/binaryage/cljs-devtools
                            :preloads [devtools.preload]}}
+
+               {:id "cards"
+                :source-paths ["src" "dev"]
+                :figwheel {:devcards true
+                           :open-urls ["http://localhost:3449/cards.html"]}
+                :compiler {:main       musnake.client.views
+                           :asset-path "js/compiled/cards_out"
+                           :output-to  "resources/public/js/compiled/cards.js"
+                           :output-dir "resources/public/js/compiled/cards_out"
+                           :source-map-timestamp true
+                           :preloads [devtools.preload]}}
                ;; This next build is a compressed minified build for
                ;; production. You can build this with:
                ;; lein cljsbuild once min
@@ -63,6 +75,8 @@
 
              ;; Start an nREPL server into the running figwheel process
              ;; nrepl-port 7888
+
+             :builds-to-start ["dev" "cards"]
 
              ;; Server Ring Handler (optional)
              ;; if you want to embed a ring handler into the figwheel http-kit
