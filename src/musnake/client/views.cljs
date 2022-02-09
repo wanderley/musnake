@@ -101,7 +101,6 @@
                                     "blue" "red")
                  board]))]])))
 
-
 (defcard empty-board
   "An empty board with just one food rendered on it.  Note that a valid board
   always has at least one food placed on it."
@@ -121,3 +120,41 @@
             (assoc-in [:snakes :test]
                       {:body [{:x 10 :y 10}] :direction 'up :alive? true})))
   {:inspect-data true})
+
+(defcard "# Game Selection")
+
+(defn game-screen [& children]
+  [:div {:style {:width            "500px"
+                 :height           "500px"
+                 :background-color "lightyellow"}}
+   children])
+
+(defn vertical-centered [& children]
+  [:div {:style {:width  "100%"
+                 :height "100%"}}
+   [:div {:style {:margin        "0"
+                  :position      "relative"
+                  :top           "50%"
+                  :left          "50%"
+                  :width         "100%"
+                  :-ms-transform "translate(-50%, -50%)"
+                  :transform     "translate(-50%, -50%)"}}
+    children]])
+
+(defn menu-option [value on-click]
+  [:div {:style {:display         "flex"
+                 :padding         "0.5em"
+                 :justify-content "center"}}
+   [:button {:style {:width            "80%"
+                     :padding          "1em"
+                     :font-size        "1em"
+                     :background-color "lightgreen"}
+             :on-click #(on-click)}
+    value]])
+
+(defcard-rg start-page
+  [game-screen
+   [vertical-centered
+    [menu-option [:strong "Play Now"] #(js/alert "Play Now")]
+    [menu-option "New Game" #(js/alert "New Game")]
+    [menu-option "Join Game" #(js/alert "Join Game")]]])
