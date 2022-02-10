@@ -143,7 +143,8 @@
 
 (defn menu-option [value on-click]
   [:div {:style {:display         "flex"
-                 :padding         "0.5em"
+                 :padding-top     "0.5em"
+                 :padding-bottom  "0.5em"
                  :justify-content "center"}}
    [:button {:style {:width            "80%"
                      :padding          "1em"
@@ -152,9 +153,57 @@
              :on-click #(on-click)}
     value]])
 
-(defcard-rg start-page
+
+(defn start-page []
   [game-screen
    [vertical-centered
     [menu-option [:strong "Play Now"] #(js/alert "Play Now")]
     [menu-option "New Game" #(js/alert "New Game")]
     [menu-option "Join Game" #(js/alert "Join Game")]]])
+
+(defcard-rg start-page
+  [start-page])
+
+(defn menu [& children]
+  [:div {:style {:display         "flex"
+                 :flex-direction  "column"
+                 :align-items     "strech"
+                 :text-align      "center"
+                 :justify-content "center"
+                 :height          "100%"}}
+   children])
+
+(defn menu-item [& children]
+  [:div {:style {:margin-top    "1em"
+                 :margin-bottom "1em"}}
+   children])
+
+(defn menu-copypasta-item [value]
+  [menu-item
+     [:input {:type  "input"
+              :value value
+              :style {:box-sizing       "border-box"
+                      :width            "80%"
+                      :padding          "1em"
+                      :font-size        "1em"
+                      :background-color "lightgreen"}}]])
+
+(defn menu-button [value on-click]
+  [menu-item
+   [:button {:style {:width            "80%"
+                     :padding          "1em"
+                     :font-size        "1em"
+                     :background-color "lightgreen"}
+             :on-click on-click}
+    value]])
+
+(defn new-game-page [url on-click]
+  [game-screen
+   [menu
+    [menu-copypasta-item url]
+    [menu-button "Play Now" on-click]]])
+
+(defcard-rg new-game-page
+  [new-game-page
+   "https://musnake.herokuapp.com/game/XXXX-XXXX"
+   #(js/alert "Play Now")])
