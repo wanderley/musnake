@@ -167,6 +167,7 @@
 (defn menu [& children]
   [:div {:style {:display         "flex"
                  :flex-direction  "column"
+                 :gap             "1em"
                  :align-items     "strech"
                  :text-align      "center"
                  :justify-content "center"
@@ -174,9 +175,7 @@
    children])
 
 (defn menu-item [& children]
-  [:div {:style {:margin-top    "1em"
-                 :margin-bottom "1em"}}
-   children])
+  [:div children])
 
 (defn menu-copypasta-item [value]
   [menu-item
