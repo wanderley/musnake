@@ -163,8 +163,9 @@
 
 (defn menu-copypasta-item [value]
   [menu-item
-     [:input {:type  "input"
-              :value value
+     [:input {:type     "input"
+              :value    value
+              :disabled "disabled"
               :style {:box-sizing       "border-box"
                       :width            "80%"
                       :padding          "1em"
