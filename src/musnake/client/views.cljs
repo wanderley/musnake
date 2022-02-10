@@ -123,47 +123,6 @@
 
 (defcard "# Game Selection")
 
-(defn game-screen [& children]
-  [:div {:style {:width            "500px"
-                 :height           "500px"
-                 :background-color "lightyellow"}}
-   children])
-
-(defn vertical-centered [& children]
-  [:div {:style {:width  "100%"
-                 :height "100%"}}
-   [:div {:style {:margin        "0"
-                  :position      "relative"
-                  :top           "50%"
-                  :left          "50%"
-                  :width         "100%"
-                  :-ms-transform "translate(-50%, -50%)"
-                  :transform     "translate(-50%, -50%)"}}
-    children]])
-
-(defn menu-option [value on-click]
-  [:div {:style {:display         "flex"
-                 :padding-top     "0.5em"
-                 :padding-bottom  "0.5em"
-                 :justify-content "center"}}
-   [:button {:style {:width            "80%"
-                     :padding          "1em"
-                     :font-size        "1em"
-                     :background-color "lightgreen"}
-             :on-click #(on-click)}
-    value]])
-
-
-(defn start-page []
-  [game-screen
-   [vertical-centered
-    [menu-option [:strong "Play Now"] #(js/alert "Play Now")]
-    [menu-option "New Game" #(js/alert "New Game")]
-    [menu-option "Join Game" #(js/alert "Join Game")]]])
-
-(defcard-rg start-page
-  [start-page])
-
 (defn menu [& children]
   [:div {:style {:display         "flex"
                  :flex-direction  "column"
@@ -177,6 +136,31 @@
 (defn menu-item [& children]
   [:div children])
 
+(defn menu-button [value on-click]
+  [menu-item
+   [:button {:style {:width            "80%"
+                     :padding          "1em"
+                     :font-size        "1em"
+                     :background-color "lightgreen"}
+             :on-click on-click}
+    value]])
+
+(defn game-screen [& children]
+  [:div {:style {:width            "500px"
+                 :height           "500px"
+                 :background-color "lightyellow"}}
+   children])
+
+(defn start-page []
+  [game-screen
+   [menu
+    [menu-button [:strong "Play Now"] #(js/alert "Play Now")]
+    [menu-button "New Game" #(js/alert "New Game")]
+    [menu-button "Join Game" #(js/alert "Join Game")]]])
+
+(defcard-rg start-page
+  [start-page])
+
 (defn menu-copypasta-item [value]
   [menu-item
      [:input {:type  "input"
@@ -186,15 +170,6 @@
                       :padding          "1em"
                       :font-size        "1em"
                       :background-color "lightgreen"}}]])
-
-(defn menu-button [value on-click]
-  [menu-item
-   [:button {:style {:width            "80%"
-                     :padding          "1em"
-                     :font-size        "1em"
-                     :background-color "lightgreen"}
-             :on-click on-click}
-    value]])
 
 (defn new-game-page [url on-click]
   [game-screen
