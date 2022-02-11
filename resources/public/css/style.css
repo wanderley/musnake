@@ -1,2 +1,22 @@
-/* some style */
+body {
+    background: black;
+}
 
+#app {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+    justify-content: center;
+    align-items: center;
+    width: 100vw;
+    height: 100vh;
+}
+
+#loading {
+    position: absolute;
+    top: 50%;
+    width: 100%;
+    text-align: center;
+    font-size: 2em;
+    color: white;
+}

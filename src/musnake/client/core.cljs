@@ -35,16 +35,10 @@
 ;;; Views
 
 (defn app []
-  [:div {:style {:margin "0"
-                 :position "absolute"
+  [:div {:style {:position "absolute"
                  :background "lightgreen"
-                 :top "50%"
-                 :left "50%"
                  :width "90%"
-                 :max-width "500px"
-                 :-ms-transform "translate(-50%, -50%)"
-                 :transform "translate(-50%, -50%)"
-                 :border "1px solid black"}}
+                 :max-width "500px"}}
    [:center
     [:h1 "μSnake"]
     [board @app-state #(server-emit! 'change-direction %)]]])
