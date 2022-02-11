@@ -175,7 +175,7 @@
   [game-screen
    [menu
     [menu-copypasta-item url]
-    [menu-button "Play Now" on-click]]])
+    [menu-button [:strong "Play Now"] on-click]]])
 
 (defcard-rg new-game-page-example
   [new-game-page
