@@ -23,13 +23,14 @@
       client-id (swap! app-state assoc :client-id (second message))
       nil))
   (recur))
-(connect! (str
-           (case (.. js/document -location -protocol)
-             "https:" "wss:"
-             "ws:")
-           "//" (.. js/document -location -host) "/ws")
-          outgoing-messages
-          incoming-messages)
+(defonce connection-channel
+  (connect! (str
+             (case (.. js/document -location -protocol)
+               "https:" "wss:"
+               "ws:")
+             "//" (.. js/document -location -host) "/ws")
+            outgoing-messages
+            incoming-messages))
 
 ;;; Views
 
