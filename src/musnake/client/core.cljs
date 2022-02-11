@@ -16,14 +16,15 @@
 (defonce outgoing-messages (async/chan (async/sliding-buffer 10)))
 (defn server-emit! [& message]
   (async/put! outgoing-messages message))
-(async/go-loop []
-  (let [message (async/<! incoming-messages)]
-    (case (first message)
-      state (swap! app-state merge (second message))
-      client-id (swap! app-state assoc :client-id (second message))
-      nil))
-  (recur))
-(defonce connection-channel
+(defonce consume-server-message
+  (async/go-loop []
+    (let [message (async/<! incoming-messages)]
+      (case (first message)
+        state (swap! app-state merge (second message))
+        client-id (swap! app-state assoc :client-id (second message))
+        nil))
+    (recur)))
+(defonce connection
   (connect! (str
              (case (.. js/document -location -protocol)
                "https:" "wss:"
