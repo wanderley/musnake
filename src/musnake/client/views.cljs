@@ -41,7 +41,6 @@
 
 (defn board [& _]
   (let [last-touch (atom nil)
-        last-key   (atom nil)
         svg-ref-with-listener (atom nil)]
     (fn [{client-id :client-id
           snakes    :snakes
@@ -158,7 +157,7 @@
     [menu-button "New Game" #(js/alert "New Game")]
     [menu-button "Join Game" #(js/alert "Join Game")]]])
 
-(defcard-rg start-page
+(defcard-rg start-page-example
   [start-page])
 
 (defn menu-copypasta-item [value]
@@ -178,7 +177,7 @@
     [menu-copypasta-item url]
     [menu-button "Play Now" on-click]]])
 
-(defcard-rg new-game-page
+(defcard-rg new-game-page-example
   [new-game-page
    "https://musnake.herokuapp.com/game/XXXX-XXXX"
    #(js/alert "Play Now")])

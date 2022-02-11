@@ -1,12 +1,11 @@
 (ns musnake.server.handler
   (:require [chord.http-kit :refer [with-channel]]
             [clojure.core.async :as async]
-            [compojure.core :refer :all]
+            [compojure.core :refer [defroutes GET]]
             [compojure.route :as route]
             [medley.core :refer [random-uuid]]
-            [org.httpkit.server :as hk]
-            [ring.util.response :as resp]
-            [musnake.shared.model :as m]))
+            [musnake.shared.model :as m]
+            [ring.util.response :as resp]))
 
 ;;; Connections
 
@@ -84,7 +83,7 @@
 
 (defn restart-server-handler! [_]
   (reset! app-state m/server-initial-state)
-  (doseq [[client-id {:keys [channel tap]}] @connections]
+  (doseq [[_ {:keys [channel tap]}] @connections]
     (async/untap main-mult tap)
     (async/close! channel)
     (async/close! tap))

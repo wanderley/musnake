@@ -1,7 +1,5 @@
 (ns musnake.client.core
-  (:require [chord.client :refer [ws-ch]]
-            [cljs.core.async :as async :include-macros true]
-            [medley.core :refer [abs]]
+  (:require [cljs.core.async :as async :include-macros true]
             [musnake.client.server :refer [connect!]]
             [musnake.shared.model :as m]
             [musnake.client.views :refer [board]]

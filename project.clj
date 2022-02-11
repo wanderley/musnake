@@ -17,7 +17,8 @@
                  [reagent "0.10.0"]]
 
   :plugins [[lein-figwheel "0.5.20" :exclusions [[http-kit]]]
-            [lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]]
+            [lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]
+            [com.github.clj-kondo/lein-clj-kondo "0.1.3"]]
 
   :source-paths ["src"]
   :test-paths ["src"]
