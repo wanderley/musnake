@@ -63,7 +63,6 @@
                                el "keydown"
                                (fn [ke]
                                  (.preventDefault ke)
-                                 (println "keydown" ke)
                                  (when-let [d (case (-> ke .-keyCode)
                                                 37 'left
                                                 38 'up
