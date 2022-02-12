@@ -162,14 +162,14 @@
 
 (defn menu-copypasta-item [value]
   [menu-item
-     [:input {:type     "input"
-              :value    value
-              :disabled "disabled"
-              :style {:box-sizing       "border-box"
-                      :width            "80%"
-                      :padding          "1em"
-                      :font-size        "1em"
-                      :background-color "lightgreen"}}]])
+   [:input {:type     "input"
+            :value    value
+            :disabled "disabled"
+            :style {:box-sizing       "border-box"
+                    :width            "80%"
+                    :padding          "1em"
+                    :font-size        "1em"
+                    :background-color "lightgreen"}}]])
 
 (defn new-game-page [url on-click]
   [game-screen
@@ -181,3 +181,30 @@
   [new-game-page
    "https://musnake.herokuapp.com/game/XXXX-XXXX"
    #(js/alert "Play Now")])
+
+(defn menu-input [{:keys [value placeholder on-change]}]
+  [menu-item
+   [:input {:type "input"
+            :value value
+            :placeholder placeholder
+            :style {:box-sizing       "border-box"
+                    :width            "80%"
+                    :padding          "1em"
+                    :font-size        "1em"
+                    :background-color "lightgreen"}
+            :on-change #(on-change (-> % .-target .-value))}]])
+
+(defn join-page [{:keys [code on-change-code on-play]}]
+  [game-screen
+   [menu
+    [menu-input {:value code
+                 :placeholder "Enter the game code!"
+                 :on-change #(on-change-code (clojure.string/upper-case %))}]
+    [menu-button [:strong "Play Now"] on-play]]])
+
+(defcard-rg join-page-example
+  (fn [app-state _]
+    [join-page {:code @app-state
+                :on-change-code #(reset! app-state %)
+                :on-play #(js/alert (str "Entered code: " @app-state))}])
+  (atom ""))
