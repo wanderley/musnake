@@ -184,9 +184,8 @@
   (fn [copied?]
     [new-game-page {:code "3E07CF78-83F2-4BC4-976B-CD6D9838112F"
                     :copied? @copied?
-                    :on-play #(do (js/alert "Play Now")
-                                  (reset! copied? false))
-                    :on-copy #(reset! copied? true)}])
+                    :on-play #(js/alert "Play Now")
+                    :on-copy #(reset! copied? (not @copied?))}])
   (atom false))
 
 (defn menu-input [{:keys [value placeholder on-change]}]
