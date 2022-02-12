@@ -122,17 +122,18 @@
 (defcard "# Game Selection")
 
 (defn menu [& children]
-  [:div {:style {:display         "flex"
-                 :flex-direction  "column"
-                 :gap             "1em"
-                 :align-items     "strech"
-                 :text-align      "center"
-                 :justify-content "center"
-                 :height          "100%"}}
-   children])
+  (into
+   [:div {:style {:display         "flex"
+                  :flex-direction  "column"
+                  :gap             "1em"
+                  :align-items     "strech"
+                  :text-align      "center"
+                  :justify-content "center"
+                  :height          "100%"}}]
+   children))
 
 (defn menu-item [& children]
-  [:div children])
+  (into [:div] children))
 
 (defn menu-button [value on-click]
   [menu-item
@@ -144,10 +145,11 @@
     value]])
 
 (defn game-screen [& children]
-  [:div {:style {:width            "500px"
-                 :height           "500px"
-                 :background-color "lightyellow"}}
-   children])
+  (into
+   [:div {:style {:width            "500px"
+                  :height           "500px"
+                  :background-color "lightyellow"}}]
+   children))
 
 (defn start-page []
   [game-screen
