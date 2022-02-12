@@ -159,27 +159,33 @@
 (defcard-rg start-page-example
   [start-page])
 
-(defn menu-copypasta-item [value]
+(defn menu-copypasta-item [{:keys [value copied? on-copy]}]
   [menu-item
-   [:input {:type     "input"
-            :value    value
-            :disabled "disabled"
-            :style {:box-sizing       "border-box"
-                    :width            "80%"
-                    :padding          "1em"
-                    :font-size        "1em"
-                    :background-color "lightgreen"}}]])
+   [:center
+    [:div {:style {:box-sizing       "border-box"
+                   :width            "80%"
+                   :padding          "1em"
+                   :font-size        "1em"
+                   :background-color (if copied? "lightblue" "lightgreen")
+                   :border "1px solid black"}
+           :on-click (fn [] (.then (.writeText (.. js/navigator -clipboard) value)
+                                   (fn [] (on-copy value))))}
+     value]]])
 
-(defn new-game-page [url on-click]
+(defn new-game-page [{:keys [code copied? on-play on-copy]}]
   [game-screen
    [menu
-    [menu-copypasta-item url]
-    [menu-button [:strong "Play Now"] on-click]]])
+    [menu-copypasta-item {:value code :copied? copied? :on-copy on-copy}]
+    [menu-button [:strong "Play Now"] on-play]]])
 
 (defcard-rg new-game-page-example
-  [new-game-page
-   "https://musnake.herokuapp.com/game/XXXX-XXXX"
-   #(js/alert "Play Now")])
+  (fn [copied?]
+    [new-game-page {:code "3E07CF78-83F2-4BC4-976B-CD6D9838112F"
+                    :copied? @copied?
+                    :on-play #(do (js/alert "Play Now")
+                                  (reset! copied? false))
+                    :on-copy #(reset! copied? true)}])
+  (atom false))
 
 (defn menu-input [{:keys [value placeholder on-change]}]
   [menu-item
