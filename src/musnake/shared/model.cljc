@@ -171,13 +171,6 @@
       snakes-move-and-eat!
       revive-dead-snakes!))
 
-(comment
-  (-> {:snake {:body [{:x 25 :y 25}] :alive? true}
-       :snakes {:python {:body [{:x 8 :y 46}] :alive? true :direction 'up}}
-       :food {:x 8 :y 46}
-       :board {:cols 50 :rows 50 :cell-size 10}}
-      process-frame))
-
 (defn connect! [app-state client-id]
   (assoc-in app-state [:snakes client-id]
             {:body [(get-unoccupied-pos! app-state)]
