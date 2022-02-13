@@ -171,15 +171,28 @@
       snakes-move-and-eat!
       revive-dead-snakes!))
 
-(defn connect! [app-state client-id]
+(defn connect [app-state client-id unoccupied-pos]
   (assoc-in app-state [:snakes client-id]
-            {:body [(get-unoccupied-pos! app-state)]
-             :alive? true}))
+            {:body [unoccupied-pos] :alive? true}))
+
+(defn connect! [app-state client-id]
+  (connect  app-state client-id (get-unoccupied-pos! app-state)))
 
 (defn disconnect [app-state client-id]
   (assoc app-state :snakes (dissoc (:snakes app-state) client-id)))
 
 (deftest test-app-state
+  (is (= (-> client-initial-state
+             (connect :python {:x 10 :y 10})
+             (get-in [:snakes :python :body 0]))
+         {:x 10 :y 10}))
+
+  (is (-> client-initial-state
+          (connect :python {:x 10 :y 10})
+          (disconnect :python)
+          (get-in [:snakes :python])
+          nil?))
+
   (is (= (get-occupied-pos
           {:snakes {:python {:body [{:x 8 :y 44} {:x 8 :y 45}] :alive? true :direction 'up}
                     :ratlle {:body [{:x 10 :y 10} {:x 11 :y 11}] :alive? true :direction 'up}}
