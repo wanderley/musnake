@@ -1,5 +1,5 @@
 (ns musnake.shared.model
-  (:require [clojure.test :refer [is deftest]]
+  (:require [clojure.test :refer [is deftest testing]]
             [medley.core :refer [map-vals]]))
 
 ;;; Model
@@ -182,16 +182,24 @@
   (assoc app-state :snakes (dissoc (:snakes app-state) client-id)))
 
 (deftest test-app-state
-  (is (= (-> client-initial-state
-             (connect :python {:x 10 :y 10})
-             (get-in [:snakes :python :body 0]))
-         {:x 10 :y 10}))
+  (testing "connect and disconnect"
+    (is (= (-> client-initial-state
+               (connect :python {:x 10 :y 10})
+               (get-in [:snakes :python :body 0]))
+           {:x 10 :y 10}))
+    (is (-> client-initial-state
+            (connect :python {:x 10 :y 10})
+            (disconnect :python)
+            (get-in [:snakes :python])
+            nil?)))
 
-  (is (-> client-initial-state
-          (connect :python {:x 10 :y 10})
-          (disconnect :python)
-          (get-in [:snakes :python])
-          nil?))
+  (testing "process frame"
+    (is (= (-> client-initial-state
+               (connect :python {:x 10 :y 10})
+               (change-direction :python 'up)
+               (process-frame)
+               (get-in [:snakes :python :body 0]))
+           {:x 10 :y 9})))
 
   (is (= (get-occupied-pos
           {:snakes {:python {:body [{:x 8 :y 44} {:x 8 :y 45}] :alive? true :direction 'up}
