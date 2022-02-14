@@ -27,13 +27,13 @@
 
 ;;;; Board
 
-(defn pos->board-pos [p b]
-  {:x (* (:x p) (:cell-size b))
-   :y (* (:y p) (:cell-size b))})
+(def board-cols 50)
+(def board-rows 50)
+(def board-cell-size 10)
 
-(defn inside-board? [b p]
-  (and (<= 0 (:x p) (dec (:cols b)))
-       (<= 0 (:y p) (dec (:rows b)))))
+(defn inside-board? [p]
+  (and (<= 0 (:x p) (dec board-cols))
+       (<= 0 (:y p) (dec board-rows))))
 
 ;;;; Snake
 
@@ -58,12 +58,12 @@
        (some? (some #{(-> s snake-head)}
                     (-> s :body rest)))))
 
-(defn snake-alive? [s b]
-  (and (inside-board? b (-> s snake-head))
+(defn snake-alive? [s]
+  (and (inside-board? (-> s snake-head))
        (not (snake-touch-itself? s))))
 
-(defn update-snake-alive? [s b]
-  (assoc s :alive? (snake-alive? s b)))
+(defn update-snake-alive? [s]
+  (assoc s :alive? (snake-alive? s)))
 
 (defn snake-ate? [s f]
   (= (get-in s [:body 0]) f))
@@ -71,8 +71,8 @@
 (defn move-snakes [ms]
   (map-vals #(move-snake %) ms))
 
-(defn update-snakes-alive? [ms b]
-  (map-vals #(update-snake-alive? % b) ms))
+(defn update-snakes-alive? [ms]
+  (map-vals #(update-snake-alive? %) ms))
 
 (deftest test-snake
   (is (= {:body [{:x 10 :y 10} {:x 10 :y 11}] :direction 'up :alive? true}
@@ -90,20 +90,16 @@
           {:body [{:x 10 :y 10} {:x 10 :y 10} {:x 10 :y 11}]
            :direction 'up :alive? true})))
 
-  (let [board {:cols 50 :rows 50 :cell-size 10}]
-    (is (= true
-           (snake-alive? {:body [{:x 10 :y 10}] :direction 'up :alive? true} board)))
-    (is (= false
-           (snake-alive? {:body [{:x 50 :y 10}] :direction 'up :alive? true} board)))))
+  (is (= true
+         (snake-alive? {:body [{:x 10 :y 10}] :direction 'up :alive? true})))
+  (is (= false
+         (snake-alive? {:body [{:x 50 :y 10}] :direction 'up :alive? true}))))
 
 ;;;; App
 
 (def client-initial-state
   {:snakes {}
-   :food  (random-pos! 50 50)
-   :board {:cols 50
-           :rows 50
-           :cell-size 10}})
+   :food  (random-pos! board-cols board-rows)})
 
 (def server-initial-state  client-initial-state)
 
@@ -137,9 +133,7 @@
     (first
      (filter
       #(not (contains? occuppied-pos %))
-      (repeatedly #(identity
-                    (random-pos! (-> app-state :board :cols)
-                                 (-> app-state :board :rows))))))))
+      (repeatedly #(identity (random-pos! board-cols board-rows)))))))
 
 (defn snakes-move-and-eat! [app-state]
   (let [{:keys [ate starving]}
@@ -167,7 +161,7 @@
 
 (defn process-frame [app-state]
   (-> app-state
-      (update :snakes update-snakes-alive? (:board app-state))
+      (update :snakes update-snakes-alive?)
       snakes-move-and-eat!
       revive-dead-snakes!))
 
@@ -204,6 +198,5 @@
   (is (= (get-occupied-pos
           {:snakes {:python {:body [{:x 8 :y 44} {:x 8 :y 45}] :alive? true :direction 'up}
                     :ratlle {:body [{:x 10 :y 10} {:x 11 :y 11}] :alive? true :direction 'up}}
-           :food {:x 8 :y 46}
-           :board {:cols 50 :rows 50 :cell-size 10}})
+           :food {:x 8 :y 46}})
          #{{:x 8, :y 45} {:x 8, :y 46} {:x 10, :y 10} {:x 11, :y 11} {:x 8, :y 44}})))

@@ -9,19 +9,23 @@
 (defcard
   "# Board")
 
-(defn object [pos color board]
-  [:rect (into (m/pos->board-pos pos board)
-               {:width (:cell-size board) :height (:cell-size board)
+(defn pos->board-pos [p]
+  {:x (* (:x p) m/board-cell-size)
+   :y (* (:y p) m/board-cell-size)})
+
+(defn object [pos color]
+  [:rect (into (pos->board-pos pos)
+               {:width m/board-cell-size :height m/board-cell-size
                 :fill color})])
 
-(defn food [food board]
-  [object food "green" board])
+(defn food [food]
+  [object food "green"])
 
-(defn snake-body [snake color board]
+(defn snake-body [snake color]
   (into
    [:svg]
    (for [o (:body snake)]
-     [object o color board])))
+     [object o color])))
 
 (defn touch-event->pos [te]
   {:x (-> te .-targetTouches last .-pageX)
@@ -44,7 +48,6 @@
         svg-ref-with-listener (atom nil)]
     (fn [{client-id :client-id
           snakes    :snakes
-          board     :board
           food-pos  :food}
          on-change-direction]
       [:div {:style {:width     "90%"
@@ -93,11 +96,10 @@
                        :fill "lightyellow"}]
 
                ;; Objects
-               [food food-pos board]]
+               [food food-pos]]
               (for [[id snake] snakes]
                 [snake-body snake (if (= id client-id)
-                                    "blue" "red")
-                 board]))]])))
+                                    "blue" "red")]))]])))
 
 (defcard empty-board
   "An empty board with just one food rendered on it.  Note that a valid board
