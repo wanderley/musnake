@@ -42,9 +42,9 @@
 
 (comment
   ;; Start game loop on server
-  (def tic! (future (while true
-                      (do (Thread/sleep 100)
-                          (toc!))))))
+  (defonce tic! (future (while true
+                          (do (Thread/sleep 100)
+                              (toc!))))))
 
 ;;; Handler
 
