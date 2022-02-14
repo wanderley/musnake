@@ -35,16 +35,18 @@
   (swap! app-state m/disconnect client-id))
 
 (defn toc! []
-  (async/put! main-chan
-              ['state
-               (get-in (swap! app-state m/process-frame)
-                       [:rooms :lobby])]))
+  (let [state (swap! app-state m/process-frame)]
+    (async/put! main-chan
+                ['state (get-in state [:rooms :lobby])])))
 
 (comment
   ;; Start game loop on server
   (defonce tic! (future (while true
                           (do (Thread/sleep 100)
-                              (toc!))))))
+                              (try
+                                (toc!)
+                                (catch Exception e
+                                  (println (.getMessage e)))))))))
 
 ;;; Handler
 
