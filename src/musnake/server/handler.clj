@@ -36,8 +36,10 @@
 
 (defn toc! []
   (let [state (swap! app-state m/process-frame)]
-    (async/put! main-chan
-                ['state (get-in state [:rooms :lobby])])))
+    (doseq [[client-id {:keys [tap]}] @connections]
+      (let [room-id (get-in state [:client-rooms client-id])
+            room (get-in state [:rooms room-id])]
+        (async/put! tap ['state room])))))
 
 (comment
   ;; Start game loop on server

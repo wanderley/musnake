@@ -149,7 +149,8 @@
 
 (def client-initial-state
   {:rooms {:lobby {:snakes {}
-                   :food (random-pos! board-cols board-rows)}}})
+                   :food (random-pos! board-cols board-rows)}}
+   :client-rooms {}})
 
 (def server-initial-state  client-initial-state)
 
@@ -176,14 +177,18 @@
       (update-in [:rooms :lobby] revive-dead-snakes!)))
 
 (defn connect [app-state client-id unoccupied-pos]
-  (assoc-in app-state [:rooms :lobby :snakes client-id]
-            {:body [unoccupied-pos] :alive? true}))
+  (-> app-state
+      (assoc-in [:rooms :lobby :snakes client-id]
+                {:body [unoccupied-pos] :alive? true})
+      (assoc-in [:client-rooms client-id] :lobby)))
 
 (defn connect! [app-state client-id]
   (connect app-state client-id (get-unoccupied-pos! app-state)))
 
 (defn disconnect [app-state client-id]
-  (update-in app-state [:rooms :lobby :snakes] dissoc client-id))
+  (-> app-state
+      (update-in [:rooms :lobby :snakes] dissoc client-id)
+      (update-in [:client-rooms] dissoc client-id)))
 
 (deftest test-app-state
   (testing "connect and disconnect"
@@ -191,11 +196,10 @@
                (connect :python {:x 10 :y 10})
                (get-in [:rooms :lobby :snakes :python :body 0]))
            {:x 10 :y 10}))
-    (is (-> client-initial-state
-            (connect :python {:x 10 :y 10})
-            (disconnect :python)
-            (get-in [:rooms :lobby :snakes :python])
-            nil?)))
+    (is (= (-> client-initial-state
+               (connect :python {:x 10 :y 10})
+               (disconnect :python))
+           client-initial-state)))
 
   (testing "process frame"
     (is (= (-> client-initial-state
