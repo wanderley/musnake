@@ -37,7 +37,8 @@
 (defn toc! []
   (async/put! main-chan
               ['state
-               (swap! app-state m/process-frame)]))
+               (get-in (swap! app-state m/process-frame)
+                       [:rooms :lobby])]))
 
 (comment
   ;; Start game loop on server

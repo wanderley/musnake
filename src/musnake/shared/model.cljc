@@ -95,11 +95,61 @@
   (is (= false
          (snake-alive? {:body [{:x 50 :y 10}] :direction 'up :alive? true}))))
 
+;;;; Room
+
+(defn get-occupied-pos [room]
+  (->> room
+       :snakes
+       vals
+       (map :body)
+       flatten
+       (concat (-> room :food list))
+       set))
+
+(defn get-unoccupied-pos! [room]
+  (let [occuppied-pos (get-occupied-pos room)]
+    (first
+     (filter
+      #(not (contains? occuppied-pos %))
+      (repeatedly #(identity (random-pos! board-cols board-rows)))))))
+
+(defn snakes-move-and-eat! [room]
+  (let [{:keys [ate starving]}
+        (group-by #(if (and (:alive? (val %))
+                            (snake-ate? (val %)
+                                        (:food room)))
+                     :ate :starving)
+                  (:snakes room))]
+    (-> room
+        (update :food
+                #(if (empty? ate) % (get-unoccupied-pos! room)))
+        (assoc  :snakes
+                (merge
+                 (map-vals grow-snake (into {} ate))
+                 (map-vals move-snake (into {} starving)))))))
+
+(defn revive-dead-snakes! [room]
+  (update room :snakes
+          #(map-vals (fn [snake]
+                       (if (:alive? snake)
+                         snake
+                         {:body [(get-unoccupied-pos! room)]
+                          :alive? true}))
+                     %)))
+
+(deftest test-room
+  (testing "occupied positions"
+    (is (= (get-occupied-pos
+            {:snakes {:python {:body [{:x 8 :y 44} {:x 8 :y 45}] :alive? true :direction 'up}
+                      :ratlle {:body [{:x 10 :y 10} {:x 11 :y 11}] :alive? true :direction 'up}}
+             :food {:x 8 :y 46}})
+           #{{:x 8, :y 45} {:x 8, :y 46} {:x 10, :y 10} {:x 11, :y 11} {:x 8, :y 44}}))))
+
 ;;;; App
 
 (def client-initial-state
-  {:snakes {}
-   :food  (random-pos! board-cols board-rows)})
+  {:rooms {:lobby {:snakes {}
+                   :food (random-pos! board-cols board-rows)}}})
 
 (def server-initial-state  client-initial-state)
 
@@ -113,78 +163,38 @@
 
 (defn change-direction [app-state client-id d]
   (let [op (-> app-state
-               (get-in [:snakes client-id :direction])
+               (get-in [:rooms :lobby :snakes client-id :direction])
                opposite-direction)]
     (if (= d op)
       app-state
-      (assoc-in app-state [:snakes client-id :direction] d))))
-
-(defn get-occupied-pos [app-state]
-  (->> app-state
-       :snakes
-       vals
-       (map :body)
-       flatten
-       (concat (-> app-state :food list))
-       set))
-
-(defn get-unoccupied-pos! [app-state]
-  (let [occuppied-pos (get-occupied-pos app-state)]
-    (first
-     (filter
-      #(not (contains? occuppied-pos %))
-      (repeatedly #(identity (random-pos! board-cols board-rows)))))))
-
-(defn snakes-move-and-eat! [app-state]
-  (let [{:keys [ate starving]}
-        (group-by #(if (and (:alive? (val %))
-                            (snake-ate? (val %)
-                                        (:food app-state)))
-                     :ate :starving)
-                  (:snakes app-state))]
-    (-> app-state
-        (update :food
-                #(if (empty? ate) % (get-unoccupied-pos! app-state)))
-        (assoc  :snakes
-                (merge
-                 (map-vals grow-snake (into {} ate))
-                 (map-vals move-snake (into {} starving)))))))
-
-(defn revive-dead-snakes! [app-state]
-  (update app-state :snakes
-          #(map-vals (fn [snake]
-                       (if (:alive? snake)
-                         snake
-                         {:body [(get-unoccupied-pos! app-state)]
-                          :alive? true}))
-                     %)))
+      (assoc-in app-state [:rooms :lobby :snakes client-id :direction] d))))
 
 (defn process-frame [app-state]
   (-> app-state
-      (update :snakes update-snakes-alive?)
-      snakes-move-and-eat!
-      revive-dead-snakes!))
+      (update-in [:rooms :lobby :snakes] update-snakes-alive?)
+      (update-in [:rooms :lobby] snakes-move-and-eat!)
+      (update-in [:rooms :lobby] revive-dead-snakes!)))
 
 (defn connect [app-state client-id unoccupied-pos]
-  (assoc-in app-state [:snakes client-id]
+  (assoc-in app-state [:rooms :lobby :snakes client-id]
             {:body [unoccupied-pos] :alive? true}))
 
 (defn connect! [app-state client-id]
-  (connect  app-state client-id (get-unoccupied-pos! app-state)))
+  (connect app-state client-id (get-unoccupied-pos! app-state)))
 
 (defn disconnect [app-state client-id]
-  (assoc app-state :snakes (dissoc (:snakes app-state) client-id)))
+  (update-in app-state [:rooms :lobby :snakes] dissoc client-id))
 
 (deftest test-app-state
   (testing "connect and disconnect"
     (is (= (-> client-initial-state
                (connect :python {:x 10 :y 10})
-               (get-in [:snakes :python :body 0]))
+               (get-in [:rooms :lobby :snakes :python :body 0]))
            {:x 10 :y 10}))
     (is (-> client-initial-state
             (connect :python {:x 10 :y 10})
             (disconnect :python)
-            (get-in [:snakes :python])
+            (get-in [:rooms :lobby :snakes :python])
             nil?)))
 
   (testing "process frame"
@@ -192,11 +202,5 @@
                (connect :python {:x 10 :y 10})
                (change-direction :python 'up)
                (process-frame)
-               (get-in [:snakes :python :body 0]))
-           {:x 10 :y 9})))
-
-  (is (= (get-occupied-pos
-          {:snakes {:python {:body [{:x 8 :y 44} {:x 8 :y 45}] :alive? true :direction 'up}
-                    :ratlle {:body [{:x 10 :y 10} {:x 11 :y 11}] :alive? true :direction 'up}}
-           :food {:x 8 :y 46}})
-         #{{:x 8, :y 45} {:x 8, :y 46} {:x 10, :y 10} {:x 11, :y 11} {:x 8, :y 44}})))
+               (get-in [:rooms :lobby :snakes :python :body 0]))
+           {:x 10 :y 9}))))
