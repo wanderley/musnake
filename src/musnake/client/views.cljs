@@ -109,16 +109,16 @@
 
 (defcard-rg user-can-move-around
   (fn [app-state _]
-    [board @app-state
+    [board (-> @app-state
+               (get-in [:rooms :lobby])
+               (assoc :client-id :test))
      (fn [d]
        (swap! app-state
               #(-> %
                    (m/change-direction :test d)
                    (m/process-frame))))])
-  (atom (-> m/client-initial-state
-            (assoc :client-id :test)
-            (assoc-in [:snakes :test]
-                      {:body [{:x 10 :y 10}] :direction 'up :alive? true})))
+  (atom (-> m/server-initial-state
+            (m/connect :test {:x 10 :y 10})))
   {:inspect-data true})
 
 (defcard "# Game Selection")

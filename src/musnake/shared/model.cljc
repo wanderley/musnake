@@ -148,11 +148,12 @@
 ;;;; App
 
 (def client-initial-state
-  {:rooms {:lobby {:snakes {}
-                   :food (random-pos! board-cols board-rows)}}
-   :client-rooms {}})
+  {:snakes {}
+   :food (random-pos! board-cols board-rows)})
 
-(def server-initial-state  client-initial-state)
+(def server-initial-state
+  {:rooms {:lobby client-initial-state}
+   :client-rooms {}})
 
 (defn opposite-direction [d]
   (case d
@@ -192,17 +193,17 @@
 
 (deftest test-app-state
   (testing "connect and disconnect"
-    (is (= (-> client-initial-state
+    (is (= (-> server-initial-state
                (connect :python {:x 10 :y 10})
                (get-in [:rooms :lobby :snakes :python :body 0]))
            {:x 10 :y 10}))
-    (is (= (-> client-initial-state
+    (is (= (-> server-initial-state
                (connect :python {:x 10 :y 10})
                (disconnect :python))
-           client-initial-state)))
+           server-initial-state)))
 
   (testing "process frame"
-    (is (= (-> client-initial-state
+    (is (= (-> server-initial-state
                (connect :python {:x 10 :y 10})
                (change-direction :python 'up)
                (process-frame)

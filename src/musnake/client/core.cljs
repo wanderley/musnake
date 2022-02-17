@@ -8,8 +8,7 @@
 
 (enable-console-print!)
 
-(defonce app-state (atom (get-in m/client-initial-state
-                                 [:rooms :lobby])))
+(defonce app-state (atom m/server-initial-state))
 
 ;;; Server
 
