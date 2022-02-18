@@ -153,15 +153,15 @@
                   :background-color "lightyellow"}}]
    children))
 
-(defn start-page []
+(defn start-page [on-play-now]
   [game-screen
    [menu
-    [menu-button [:strong "Play Now"] #(js/alert "Play Now")]
+    [menu-button [:strong "Play Now"] on-play-now]
     [menu-button "New Game" #(js/alert "New Game")]
     [menu-button "Join Game" #(js/alert "Join Game")]]])
 
 (defcard-rg start-page-example
-  [start-page])
+  [start-page #(js/alert "Play Now")])
 
 (defn menu-copypasta-item [{:keys [value copied? on-copy]}]
   [menu-item

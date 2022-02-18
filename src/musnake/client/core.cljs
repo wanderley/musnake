@@ -2,7 +2,7 @@
   (:require [cljs.core.async :as async :include-macros true]
             [musnake.client.server :refer [connect!]]
             [musnake.shared.model :as m]
-            [musnake.client.views :refer [board]]
+            [musnake.client.views :refer [start-page board]]
             [reagent.core :as reagent :refer [atom]]
             [reagent.dom :as rd]))
 
@@ -42,7 +42,9 @@
                  :max-width "500px"}}
    [:center
     [:h1 "μSnake"]
-    [board @app-state #(server-emit! 'change-direction %)]]])
+    (case (:view @app-state)
+      start-page [start-page #(swap! app-state assoc :view 'game)]
+      game [board @app-state #(server-emit! 'change-direction %)])]])
 
 (rd/render [app] (. js/document (getElementById "app")))
 

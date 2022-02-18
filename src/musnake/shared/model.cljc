@@ -149,7 +149,8 @@
 
 (def client-initial-state
   {:snakes {}
-   :food (random-pos! board-cols board-rows)})
+   :food (random-pos! board-cols board-rows)
+   :view 'start-page})
 
 (def server-initial-state
   {:rooms {:lobby client-initial-state}
