@@ -8,7 +8,7 @@
 
 (enable-console-print!)
 
-(defonce app-state (atom m/server-initial-state))
+(defonce app-state (atom m/client-initial-state))
 
 ;;; Server
 
