@@ -2,7 +2,11 @@
   (:require [cljs.core.async :as async :include-macros true]
             [musnake.client.server :refer [connect!]]
             [musnake.shared.model :as m]
-            [musnake.client.views :refer [start-page board]]
+            [musnake.client.views :refer [start-page
+                                          new-game-page
+                                          join-page
+                                          board
+                                          waiting-page]]
             [reagent.core :as reagent :refer [atom]]
             [reagent.dom :as rd]))
 
@@ -22,6 +26,15 @@
       (case (first message)
         state (swap! app-state merge (second message))
         client-id (swap! app-state assoc :client-id (second message))
+        join-room (swap! app-state #(-> (second message)
+                                        (merge %)
+                                        (assoc :view 'new-game-page)))
+        join-failed (swap! app-state #(-> %
+                                          (assoc :room-code "")
+                                          (assoc :view 'join-page)))
+        play (swap! app-state #(-> (second message)
+                                   (merge %)
+                                   (assoc :view 'game)))
         nil))
     (recur)))
 (defonce connection
@@ -43,8 +56,21 @@
    [:center
     [:h1 "μSnake"]
     (case (:view @app-state)
-      start-page [start-page #(swap! app-state assoc :view 'game)]
-      game [board @app-state #(server-emit! 'change-direction %)])]])
+      start-page [start-page {:on-play-now #(swap! app-state assoc :view 'game)
+                              :on-new-game #(do (swap! app-state assoc :view 'waiting)
+                                                (server-emit! 'new-game))
+                              :on-join #(swap! app-state assoc :view 'join-page)}]
+      new-game-page [new-game-page {:code (:room-id @app-state)
+                                    :copied? (:room-id-copied? @app-state)
+                                    :on-play #(swap! app-state assoc :view 'game)
+                                    :on-copy #(swap! app-state assoc :room-id-copied? true)}]
+      join-page [join-page {:code (:room-code @app-state)
+                            :on-change-code #(swap! app-state assoc :room-code %)
+                            :on-play #(do
+                                        (swap! app-state assoc 'waiting)
+                                        (server-emit! 'join (:room-code @app-state)))}]
+      game [board @app-state #(server-emit! 'change-direction %)]
+      waiting [waiting-page])]])
 
 (rd/render [app] (. js/document (getElementById "app")))
 

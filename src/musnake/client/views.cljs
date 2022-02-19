@@ -118,7 +118,7 @@
                    (m/change-direction :test d)
                    (m/process-frame))))])
   (atom (-> m/server-initial-state
-            (m/connect :test {:x 10 :y 10})))
+            (m/connect :test :lobby {:x 10 :y 10})))
   {:inspect-data true})
 
 (defcard "# Game Selection")
@@ -153,15 +153,17 @@
                   :background-color "lightyellow"}}]
    children))
 
-(defn start-page [on-play-now]
+(defn start-page [{:keys [on-play-now on-new-game on-join]}]
   [game-screen
    [menu
     [menu-button [:strong "Play Now"] on-play-now]
-    [menu-button "New Game" #(js/alert "New Game")]
-    [menu-button "Join Game" #(js/alert "Join Game")]]])
+    [menu-button "New Game" on-new-game]
+    [menu-button "Join Game" on-join]]])
 
 (defcard-rg start-page-example
-  [start-page #(js/alert "Play Now")])
+  [start-page {:on-play-now #(js/alert "Play Now")
+               :on-new-game #(js/alert "New Game")
+               :on-join #(js/alert "Join Game")}])
 
 (defn menu-copypasta-item [{:keys [value copied? on-copy]}]
   [menu-item
@@ -207,7 +209,7 @@
    [menu
     [menu-input {:value code
                  :placeholder "Enter the game code!"
-                 :on-change #(on-change-code (clojure.string/upper-case %))}]
+                 :on-change #(on-change-code %)}]
     [menu-button [:strong "Play Now"] on-play]]])
 
 (defcard-rg join-page-example
@@ -216,3 +218,12 @@
                 :on-change-code #(reset! app-state %)
                 :on-play #(js/alert (str "Entered code: " @app-state))}])
   (atom ""))
+
+
+(defn waiting-page []
+  [game-screen
+   [menu
+    [:div "Waiting for the snakver ..."]]])
+
+(defcard-rg waiting-page
+  [waiting-page])

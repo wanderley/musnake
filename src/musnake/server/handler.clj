@@ -23,13 +23,35 @@
 (defmacro defevent! [type args & body]
  `(defmethod ~'event! ~type [~'_ ~@args] (do ~@body)))
 
+(defn extract-client-state [app-state client-id room-id]
+  (-> app-state
+      (get-in [:rooms room-id])
+      (assoc :client-id client-id)
+      (assoc :room-id room-id)))
+
 (defevent! :default [client-id app-state & params] app-state)
 
 (defevent! 'change-direction [client-id direction]
   (swap! app-state m/change-direction client-id direction))
 
+(defevent! 'new-game [client-id]
+  (let [state (swap! app-state m/new-game! client-id)
+        tap (get-in @connections [client-id :tap])
+        room-id (get-in state [:client-rooms client-id])
+        room (extract-client-state state client-id room-id)]
+    (async/put! tap ['join-room room])))
+
+(defevent! 'join [client-id room-id]
+  (if (get-in @app-state [:rooms room-id])
+    (let [state (swap! app-state m/connect! room-id client-id)
+          tap (get-in @connections [client-id :tap])
+          room-id (get-in state [:client-rooms client-id])
+          room (extract-client-state state client-id room-id)]
+      (async/put! tap ['play room]))
+    (async/put! (get-in @connections [client-id :tap]) ['join-failed])))
+
 (defevent! 'connect [client-id]
-  (swap! app-state m/connect! client-id))
+  (swap! app-state m/connect! :lobby client-id))
 
 (defevent! 'disconnect [client-id]
   (swap! app-state m/disconnect client-id))
@@ -38,7 +60,7 @@
   (let [state (swap! app-state m/process-frame)]
     (doseq [[client-id {:keys [tap]}] @connections]
       (let [room-id (get-in state [:client-rooms client-id])
-            room (get-in state [:rooms room-id])]
+            room (extract-client-state state client-id room-id)]
         (async/put! tap ['state room])))))
 
 (comment

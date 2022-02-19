@@ -1,6 +1,6 @@
 (ns musnake.shared.model
   (:require [clojure.test :refer [is deftest testing]]
-            [medley.core :refer [map-vals]]))
+            [medley.core :refer [map-vals random-uuid]]))
 
 ;;; Model
 
@@ -147,13 +147,15 @@
 
 ;;;; App
 
-(def client-initial-state
+(def room-initial-state
   {:snakes {}
-   :food (random-pos! board-cols board-rows)
-   :view 'start-page})
+   :food (random-pos! board-cols board-rows)})
+
+(def client-initial-state
+  (assoc room-initial-state :view 'start-page))
 
 (def server-initial-state
-  {:rooms {:lobby client-initial-state}
+  {:rooms {:lobby (dissoc client-initial-state :view)}
    :client-rooms {}})
 
 (defn opposite-direction [d]
@@ -165,47 +167,73 @@
     nil))
 
 (defn change-direction [app-state client-id d]
-  (let [op (-> app-state
-               (get-in [:rooms :lobby :snakes client-id :direction])
+  (let [room (get-in app-state [:client-rooms client-id])
+        op (-> app-state
+               (get-in [:rooms room :snakes client-id :direction])
                opposite-direction)]
     (if (= d op)
       app-state
-      (assoc-in app-state [:rooms :lobby :snakes client-id :direction] d))))
+      (assoc-in app-state [:rooms room :snakes client-id :direction] d))))
 
 (defn process-frame [app-state]
   (-> app-state
-      (update-in [:rooms :lobby :snakes] update-snakes-alive?)
-      (update-in [:rooms :lobby] snakes-move-and-eat!)
-      (update-in [:rooms :lobby] revive-dead-snakes!)))
+      (update :rooms
+              #(map-vals
+                (fn [room]
+                  (-> room
+                      (update-in [:snakes] update-snakes-alive?)
+                      snakes-move-and-eat!
+                      revive-dead-snakes!))
+                %))))
 
-(defn connect [app-state client-id unoccupied-pos]
+(defn connect [app-state client-id room unoccupied-pos]
   (-> app-state
-      (assoc-in [:rooms :lobby :snakes client-id]
+      (assoc-in [:rooms room :snakes client-id]
                 {:body [unoccupied-pos] :alive? true})
-      (assoc-in [:client-rooms client-id] :lobby)))
+      (assoc-in [:client-rooms client-id] room)))
 
-(defn connect! [app-state client-id]
-  (connect app-state client-id (get-unoccupied-pos! app-state)))
+(defn connect! [app-state room client-id]
+  (connect app-state client-id room (get-unoccupied-pos! app-state)))
 
 (defn disconnect [app-state client-id]
+  (let [room (get-in app-state [:client-rooms client-id])]
+    (-> app-state
+        (update-in [:rooms room :snakes] dissoc client-id)
+        (update-in [:client-rooms] dissoc client-id))))
+
+(defn new-game [app-state client-id room unoccupied-pos]
   (-> app-state
-      (update-in [:rooms :lobby :snakes] dissoc client-id)
-      (update-in [:client-rooms] dissoc client-id)))
+      (disconnect client-id)
+      (assoc-in [:rooms room] room-initial-state)
+      (connect client-id room unoccupied-pos)))
+
+(defn new-game! [app-state client-id]
+  (new-game app-state
+            client-id
+            (.toString (random-uuid))
+            (get-unoccupied-pos! app-state)))
 
 (deftest test-app-state
   (testing "connect and disconnect"
     (is (= (-> server-initial-state
-               (connect :python {:x 10 :y 10})
+               (connect :python :lobby {:x 10 :y 10})
                (get-in [:rooms :lobby :snakes :python :body 0]))
            {:x 10 :y 10}))
     (is (= (-> server-initial-state
-               (connect :python {:x 10 :y 10})
+               (connect :python :lobby {:x 10 :y 10})
                (disconnect :python))
            server-initial-state)))
 
+  (testing "new game"
+    (is (= (-> server-initial-state
+               (connect :python :lobby {:x 10 :y 10})
+               (new-game :python :private-room {:x 11 :y 11})
+               (get-in [:rooms :private-room :snakes :python :body 0]))
+           {:x 11 :y 11})))
+
   (testing "process frame"
     (is (= (-> server-initial-state
-               (connect :python {:x 10 :y 10})
+               (connect :python :lobby {:x 10 :y 10})
                (change-direction :python 'up)
                (process-frame)
                (get-in [:rooms :lobby :snakes :python :body 0]))
