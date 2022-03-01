@@ -48,7 +48,29 @@
 
 ;;; Views
 
-(defn app []
+(defmulti message (fn [type & _] type))
+
+(defmethod message :change-view [_ state view]
+  {:state (assoc state :view view)})
+
+(defmethod message :new-game [_ state]
+  {:state (assoc state :view 'waiting)
+   :server-emit ['new-game]})
+
+(defmethod message :copy-room-id [_ state]
+  {:state (assoc state :room-id-copied? true)})
+
+(defmethod message :change-room-code [_ state code]
+  {:state (assoc state :room-code code)})
+
+(defmethod message :join-room [_ state]
+  {:state (assoc state :view 'waiting)
+   :server-emit ['join (:room-code state)]})
+
+(defmethod message :change-direction [_ state direction]
+  {:server-emit ['change-direction direction]})
+
+(defn app [app-state dispatch]
   [:div {:style {:position "absolute"
                  :background "lightgreen"
                  :width "90%"
@@ -56,23 +78,30 @@
    [:center
     [:h1 "μSnake"]
     (case (:view @app-state)
-      start-page [start-page {:on-play-now #(swap! app-state assoc :view 'game)
-                              :on-new-game #(do (swap! app-state assoc :view 'waiting)
-                                                (server-emit! 'new-game))
-                              :on-join #(swap! app-state assoc :view 'join-page)}]
+      start-page [start-page {:on-play-now #(dispatch :change-view 'game)
+                              :on-new-game #(dispatch :new-game)
+                              :on-join #(dispatch :change-view 'join-page)}]
       new-game-page [new-game-page {:code (:room-id @app-state)
                                     :copied? (:room-id-copied? @app-state)
-                                    :on-play #(swap! app-state assoc :view 'game)
-                                    :on-copy #(swap! app-state assoc :room-id-copied? true)}]
+                                    :on-play #(dispatch :change-view 'game)
+                                    :on-copy #(dispatch :copy-room-id)}]
       join-page [join-page {:code (:room-code @app-state)
-                            :on-change-code #(swap! app-state assoc :room-code %)
-                            :on-play #(do
-                                        (swap! app-state assoc 'waiting)
-                                        (server-emit! 'join (:room-code @app-state)))}]
-      game [board @app-state #(server-emit! 'change-direction %)]
+                            :on-change-code #(dispatch :change-room-code %)
+                            :on-play #(dispatch :join-room)}]
+      game [board @app-state #(dispatch :change-direction %)]
       waiting [waiting-page])]])
 
-(rd/render [app] (. js/document (getElementById "app")))
+(defn world [state {:keys [on-render on-message]}]
+  (let [dispatch (fn [type & params]
+                   (let [next (apply on-message (into [type @state] params))]
+                     (when (:state next)
+                       (swap! state #(identity (:state next))))
+                     (when (:server-emit next)
+                       (apply server-emit! (:server-emit next)))))]
+    (on-render state dispatch)))
+
+(rd/render [world app-state {:on-render app :on-message message}]
+           (. js/document (getElementById "app")))
 
 (defn on-js-reload []
   ;; optionally touch your app-state to force rerendering depending on
