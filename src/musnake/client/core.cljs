@@ -16,6 +16,30 @@
 
 ;;; Server
 
+(defmulti server-message (fn [type & _] type))
+
+(defmethod server-message 'state [_ state new-state]
+  (merge state new-state))
+
+(defmethod server-message 'client-id [_ state client-id]
+  (assoc state :client-id client-id))
+
+(defmethod server-message 'join-room [_ state new-state]
+  (-> state
+      (merge new-state)
+      (assoc :view 'new-game-page)))
+
+(defmethod server-message 'join-failed [_ state]
+  (-> state
+      (assoc :room-code "")
+      (assoc :view 'join-page)))
+
+(defmethod server-message 'play [_ state new-state]
+  (-> state
+      (merge new-state)
+      (assoc :view 'game)))
+
+
 (defonce incoming-messages (async/chan (async/sliding-buffer 10)))
 (defonce outgoing-messages (async/chan (async/sliding-buffer 10)))
 (defn server-emit! [& message]
@@ -23,19 +47,8 @@
 (defonce consume-server-message
   (async/go-loop []
     (let [message (async/<! incoming-messages)]
-      (case (first message)
-        state (swap! app-state merge (second message))
-        client-id (swap! app-state assoc :client-id (second message))
-        join-room (swap! app-state #(-> (second message)
-                                        (merge %)
-                                        (assoc :view 'new-game-page)))
-        join-failed (swap! app-state #(-> %
-                                          (assoc :room-code "")
-                                          (assoc :view 'join-page)))
-        play (swap! app-state #(-> (second message)
-                                   (merge %)
-                                   (assoc :view 'game)))
-        nil))
+      (swap! app-state
+             #(apply server-message (into [(first message) %] (rest message)))))
     (recur)))
 (defonce connection
   (connect! (str
