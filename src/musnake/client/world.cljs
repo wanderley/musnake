@@ -30,8 +30,8 @@
 (defn make-world [state {:keys [on-render on-message on-server-message]}]
   (let [incoming-messages (async/chan (async/sliding-buffer 10))
         outgoing-messages (async/chan (async/sliding-buffer 10))
-        server-emit! (fn [& message]
-                       (async/put! outgoing-messages message))
+        server-dispatch! (fn [& message]
+                           (async/put! outgoing-messages message))
         consume-server-message (async/go-loop []
                                  (let [message (async/<! incoming-messages)]
                                    (swap! state
@@ -50,7 +50,7 @@
                    (let [next (apply on-message (into [type @state] params))]
                      (when (:state next)
                        (swap! state #(identity (:state next))))
-                     (when (:server-emit next)
-                       (apply server-emit! (:server-emit next)))))]
+                     (when (:server-dispatch next)
+                       (apply server-dispatch! (:server-dispatch next)))))]
     (fn []
       (on-render state dispatch))))

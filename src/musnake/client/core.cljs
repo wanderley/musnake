@@ -47,7 +47,7 @@
 
 (defmethod message :new-game [_ state]
   {:state (assoc state :view 'waiting)
-   :server-emit ['new-game]})
+   :server-dispatch ['new-game]})
 
 (defmethod message :copy-room-id [_ state]
   {:state (assoc state :room-id-copied? true)})
@@ -57,10 +57,10 @@
 
 (defmethod message :join-room [_ state]
   {:state (assoc state :view 'waiting)
-   :server-emit ['join (:room-code state)]})
+   :server-dispatch ['join (:room-code state)]})
 
 (defmethod message :change-direction [_ state direction]
-  {:server-emit ['change-direction direction]})
+  {:server-dispatch ['change-direction direction]})
 
 (defn app [app-state dispatch]
   [:div {:style {:position "absolute"
