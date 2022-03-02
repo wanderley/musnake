@@ -19,7 +19,7 @@
 
 ;;; Events
 
-(defmulti event! (fn [type app-state & params] type))
+(defmulti event! (fn [type & params] type))
 (defmacro defevent! [type args & body]
  `(defmethod ~'event! ~type [~'_ ~@args] (do ~@body)))
 
@@ -29,39 +29,44 @@
       (assoc :client-id client-id)
       (assoc :room-id room-id)))
 
-(defevent! :default [client-id app-state & params] app-state)
+(defevent! :default [_ app-state & params] app-state)
 
-(defevent! 'change-direction [client-id direction]
-  (swap! app-state m/change-direction client-id direction))
+(defevent! 'change-direction [app-state client-id direction]
+  (m/change-direction app-state client-id direction))
 
-(defevent! 'new-game [client-id]
-  (let [state (swap! app-state m/new-game! client-id)
+(defevent! 'new-game [app-state client-id]
+  (let [state (m/new-game! app-state client-id)
         tap (get-in @connections [client-id :tap])
         room-id (get-in state [:client-rooms client-id])
         room (extract-client-state state client-id room-id)]
-    (async/put! tap ['join-room room])))
+    (async/put! tap ['join-room room])
+    state))
 
-(defevent! 'join [client-id room-id]
-  (if (get-in @app-state [:rooms room-id])
-    (let [state (swap! app-state m/connect! room-id client-id)
+(defevent! 'join [app-state client-id room-id]
+  (if (get-in app-state [:rooms room-id])
+    (let [state (m/connect! app-state room-id client-id)
           tap (get-in @connections [client-id :tap])
           room-id (get-in state [:client-rooms client-id])
           room (extract-client-state state client-id room-id)]
-      (async/put! tap ['play room]))
-    (async/put! (get-in @connections [client-id :tap]) ['join-failed])))
+      (async/put! tap ['play room])
+      state)
+    (do
+      (async/put! (get-in @connections [client-id :tap]) ['join-failed])
+      app-state)))
 
-(defevent! 'connect [client-id]
-  (swap! app-state m/connect! :lobby client-id))
+(defevent! 'connect [app-state client-id]
+  (m/connect! app-state :lobby client-id))
 
-(defevent! 'disconnect [client-id]
-  (swap! app-state m/disconnect client-id))
+(defevent! 'disconnect [app-state client-id]
+  (m/disconnect app-state client-id))
 
 (defn toc! []
   (let [state (swap! app-state m/process-frame)]
     (doseq [[client-id {:keys [tap]}] @connections]
       (let [room-id (get-in state [:client-rooms client-id])
             room (extract-client-state state client-id room-id)]
-        (async/put! tap ['state room])))))
+        (async/put! tap ['state room])))
+    state))
 
 (comment
   ;; Start game loop on server
@@ -81,7 +86,7 @@
           client-id (.toString (random-uuid))]
       (swap! connections assoc client-id {:channel client-channel
                                           :tap     client-tap})
-      (event! 'connect client-id)
+      (swap! app-state #(event! 'connect % client-id))
       (async/put! client-channel ['client-id client-id])
       (async/tap main-mult client-tap)
       (async/go-loop []
@@ -98,15 +103,16 @@
           ([{:keys [message]}]
            (if message
              (do
-               (apply event! (concat (list (first message))
-                                     (list client-id)
-                                     (rest message)))
+               (swap! app-state
+                      #(apply event! (concat (list (first message) %)
+                                             (list client-id)
+                                             (rest message))))
                (recur))
              (do
                (async/untap main-mult client-tap)
                (async/close! client-tap)
                (swap! connections dissoc client-id)
-               (event! 'disconnect client-id)))))))))
+               (swap! app-state #(event! 'disconnect % client-id))))))))))
 
 (defn restart-server-handler! [_]
   (reset! app-state m/server-initial-state)
