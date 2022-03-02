@@ -32,33 +32,30 @@
 (defevent! :default [_ app-state & params] app-state)
 
 (defevent! 'change-direction [app-state client-id direction]
-  (m/change-direction app-state client-id direction))
+  {:state (m/change-direction app-state client-id direction)})
 
 (defevent! 'new-game [app-state client-id]
   (let [state (m/new-game! app-state client-id)
-        tap (get-in @connections [client-id :tap])
         room-id (get-in state [:client-rooms client-id])
         room (extract-client-state state client-id room-id)]
-    (async/put! tap ['join-room room])
-    state))
+    {:state state
+     :client-message [client-id 'join-room room]}))
 
 (defevent! 'join [app-state client-id room-id]
   (if (get-in app-state [:rooms room-id])
     (let [state (m/connect! app-state room-id client-id)
-          tap (get-in @connections [client-id :tap])
           room-id (get-in state [:client-rooms client-id])
           room (extract-client-state state client-id room-id)]
-      (async/put! tap ['play room])
-      state)
-    (do
-      (async/put! (get-in @connections [client-id :tap]) ['join-failed])
-      app-state)))
+      {:state state
+       :client-message [client-id 'play room]})
+    {:state app-state
+     :client-message [client-id 'join-failed]}))
 
 (defevent! 'connect [app-state client-id]
-  (m/connect! app-state :lobby client-id))
+  {:state (m/connect! app-state :lobby client-id)})
 
 (defevent! 'disconnect [app-state client-id]
-  (m/disconnect app-state client-id))
+  {:state (m/disconnect app-state client-id)})
 
 (defn toc! []
   (let [state (swap! app-state m/process-frame)]
@@ -66,7 +63,7 @@
       (let [room-id (get-in state [:client-rooms client-id])
             room (extract-client-state state client-id room-id)]
         (async/put! tap ['state room])))
-    state))
+    {:state state}))
 
 (comment
   ;; Start game loop on server
@@ -82,7 +79,15 @@
 (defn make-world [app-state]
   (let [dispatch (fn [& params]
                    (swap! app-state
-                          #(apply event! (into [(first params) %] (rest params)))))]
+                          #(let [next
+                                 (apply event! (into [(first params) %]
+                                                     (rest params)))]
+                             (when-let [[client-id & params] (:client-message next)]
+                               (async/put! (get-in @connections [client-id :tap])
+                                           params))
+                             (if (:state next)
+                               (:state next)
+                               %))))]
     (fn ws-handler
       [req]
       (with-channel req client-channel
@@ -108,7 +113,7 @@
                (if message
                  (do
                    (apply dispatch (concat (list (first message) client-id)
-                                                 (rest message)))
+                                           (rest message)))
                    (recur))
                  (do
                    (async/untap main-mult client-tap)
