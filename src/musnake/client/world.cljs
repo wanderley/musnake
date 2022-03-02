@@ -1,6 +1,31 @@
 (ns musnake.client.world
   (:require [cljs.core.async :as async :include-macros true]
-            [musnake.client.server :refer [connect!]]))
+            [chord.client :refer [ws-ch]]))
+
+(defn- receive-messages! [ws-channel incoming-messages]
+  (async/go-loop []
+    (let [{:keys [message]} (async/<! ws-channel)]
+      (async/>! incoming-messages message)
+      (recur))))
+
+(defn- send-messages! [ws-channel outgoing-messages]
+  (async/go-loop []
+    (when-let [message (async/<! outgoing-messages)]
+      (async/>! ws-channel message)
+      (recur))))
+
+(defn- connect!
+  "Connects with the server and starts the input and output channels."
+  [ws-url outgoing-messages incoming-messages]
+  (async/go
+    (let [{:keys [ws-channel error]} (async/<! (ws-ch ws-url))]
+      (if error
+        (println "Connection failed with" (str error))
+        (do
+          (println "Connected!")
+          (send-messages! ws-channel outgoing-messages)
+          (receive-messages! ws-channel incoming-messages))))))
+
 
 (defn make-world [state {:keys [on-render on-message on-server-message]}]
   (let [incoming-messages (async/chan (async/sliding-buffer 10))
