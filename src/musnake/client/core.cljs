@@ -104,16 +104,19 @@
       game [board @app-state #(dispatch :change-direction %)]
       waiting [waiting-page])]])
 
-(defn world [state {:keys [on-render on-message]}]
+(defn make-world [state {:keys [on-render on-message]}]
   (let [dispatch (fn [type & params]
                    (let [next (apply on-message (into [type @state] params))]
                      (when (:state next)
                        (swap! state #(identity (:state next))))
                      (when (:server-emit next)
                        (apply server-emit! (:server-emit next)))))]
-    (on-render state dispatch)))
+    (fn []
+      (on-render state dispatch))))
 
-(rd/render [world app-state {:on-render app :on-message message}]
+(defonce world (make-world app-state {:on-render app :on-message message}))
+
+(rd/render [world]
            (. js/document (getElementById "app")))
 
 (defn on-js-reload []
