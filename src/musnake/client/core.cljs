@@ -39,26 +39,6 @@
       (merge new-state)
       (assoc :view 'game)))
 
-
-(defonce incoming-messages (async/chan (async/sliding-buffer 10)))
-(defonce outgoing-messages (async/chan (async/sliding-buffer 10)))
-(defn server-emit! [& message]
-  (async/put! outgoing-messages message))
-(defonce consume-server-message
-  (async/go-loop []
-    (let [message (async/<! incoming-messages)]
-      (swap! app-state
-             #(apply server-message (into [(first message) %] (rest message)))))
-    (recur)))
-(defonce connection
-  (connect! (str
-             (case (.. js/document -location -protocol)
-               "https:" "wss:"
-               "ws:")
-             "//" (.. js/document -location -host) "/ws")
-            outgoing-messages
-            incoming-messages))
-
 ;;; Views
 
 (defmulti message (fn [type & _] type))
@@ -104,8 +84,26 @@
       game [board @app-state #(dispatch :change-direction %)]
       waiting [waiting-page])]])
 
-(defn make-world [state {:keys [on-render on-message]}]
-  (let [dispatch (fn [type & params]
+(defn make-world [state {:keys [on-render on-message on-server-message]}]
+  (let [incoming-messages (async/chan (async/sliding-buffer 10))
+        outgoing-messages (async/chan (async/sliding-buffer 10))
+        server-emit! (fn [& message]
+                       (async/put! outgoing-messages message))
+        consume-server-message (async/go-loop []
+                                 (let [message (async/<! incoming-messages)]
+                                   (swap! app-state
+                                          #(apply on-server-message
+                                                  (into [(first message) %]
+                                                        (rest message)))))
+                                 (recur))
+        connection (connect! (str
+                              (case (.. js/document -location -protocol)
+                                "https:" "wss:"
+                                "ws:")
+                              "//" (.. js/document -location -host) "/ws")
+                             outgoing-messages
+                             incoming-messages)
+        dispatch (fn [type & params]
                    (let [next (apply on-message (into [type @state] params))]
                      (when (:state next)
                        (swap! state #(identity (:state next))))
@@ -114,7 +112,9 @@
     (fn []
       (on-render state dispatch))))
 
-(defonce world (make-world app-state {:on-render app :on-message message}))
+(defonce world (make-world app-state {:on-render app
+                                      :on-message message
+                                      :on-server-message server-message}))
 
 (rd/render [world]
            (. js/document (getElementById "app")))
