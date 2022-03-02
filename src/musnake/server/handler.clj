@@ -79,40 +79,42 @@
 
 ;;; Handler
 
-(defn ws-handler
-  [req]
-  (with-channel req client-channel
-    (let [client-tap (async/chan (async/sliding-buffer 10))
-          client-id (.toString (random-uuid))]
-      (swap! connections assoc client-id {:channel client-channel
-                                          :tap     client-tap})
-      (swap! app-state #(event! 'connect % client-id))
-      (async/put! client-channel ['client-id client-id])
-      (async/tap main-mult client-tap)
-      (async/go-loop []
-        (async/alt!
-          client-tap
-          ([message]
-           (if message
-             (do
-               (async/>! client-channel message)
-               (recur))
-             (async/close! client-channel)))
+(defn make-world [app-state]
+  (let [dispatch (fn [& params]
+                   (swap! app-state
+                          #(apply event! (into [(first params) %] (rest params)))))]
+    (fn ws-handler
+      [req]
+      (with-channel req client-channel
+        (let [client-tap (async/chan (async/sliding-buffer 10))
+              client-id (.toString (random-uuid))]
+          (swap! connections assoc client-id {:channel client-channel
+                                              :tap     client-tap})
+          (dispatch 'connect client-id)
+          (async/put! client-channel ['client-id client-id])
+          (async/tap main-mult client-tap)
+          (async/go-loop []
+            (async/alt!
+              client-tap
+              ([message]
+               (if message
+                 (do
+                   (async/>! client-channel message)
+                   (recur))
+                 (async/close! client-channel)))
 
-          client-channel
-          ([{:keys [message]}]
-           (if message
-             (do
-               (swap! app-state
-                      #(apply event! (concat (list (first message) %)
-                                             (list client-id)
-                                             (rest message))))
-               (recur))
-             (do
-               (async/untap main-mult client-tap)
-               (async/close! client-tap)
-               (swap! connections dissoc client-id)
-               (swap! app-state #(event! 'disconnect % client-id))))))))))
+              client-channel
+              ([{:keys [message]}]
+               (if message
+                 (do
+                   (apply dispatch (concat (list (first message) client-id)
+                                                 (rest message)))
+                   (recur))
+                 (do
+                   (async/untap main-mult client-tap)
+                   (async/close! client-tap)
+                   (swap! connections dissoc client-id)
+                   (dispatch 'disconnect client-id)))))))))))
 
 (defn restart-server-handler! [_]
   (reset! app-state m/server-initial-state)
@@ -127,7 +129,7 @@
 
 (defroutes app
   (GET "/restart" [] restart-server-handler!)
-  (GET "/ws" [] ws-handler)
+  (GET "/ws" [] (make-world app-state))
   (GET "/" [] (resp/resource-response "index.html" {:root "public"}))
   (route/resources "/")
   (route/not-found "<h1>Page not found!  You were supposed to be playing with snakes!</h1>"))
