@@ -91,7 +91,7 @@
                        (async/put! outgoing-messages message))
         consume-server-message (async/go-loop []
                                  (let [message (async/<! incoming-messages)]
-                                   (swap! app-state
+                                   (swap! state
                                           #(apply on-server-message
                                                   (into [(first message) %]
                                                         (rest message)))))
