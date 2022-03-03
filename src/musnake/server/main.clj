@@ -9,6 +9,4 @@
   (let [port (if (empty? args) 8080 (or (Integer. (first args)) 8080))]
     (println (str "Starting server on http://localhost:" port))
     (hk/run-server h/app {:port port})
-    (def tic! (future (while true
-                        (do (Thread/sleep 100)
-                            (h/toc!)))))))
+    (h/big-bang!)))
