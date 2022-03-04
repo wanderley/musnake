@@ -62,6 +62,21 @@
 (defmethod message :change-direction [_ state direction]
   {:server-dispatch ['change-direction direction]})
 
+(defn game-view [app-state dispatch]
+  (case (:view @app-state)
+    start-page [start-page {:on-play-now #(dispatch :change-view 'game)
+                            :on-new-game #(dispatch :new-game)
+                            :on-join #(dispatch :change-view 'join-page)}]
+    new-game-page [new-game-page {:code (:room-id @app-state)
+                                  :copied? (:room-id-copied? @app-state)
+                                  :on-play #(dispatch :change-view 'game)
+                                  :on-copy #(dispatch :copy-room-id)}]
+    join-page [join-page {:code (:room-code @app-state)
+                          :on-change-code #(dispatch :change-room-code %)
+                          :on-play #(dispatch :join-room)}]
+    game [board @app-state #(dispatch :change-direction %)]
+    waiting [waiting-page]))
+
 (defn app [app-state dispatch]
   [:div {:style {:position "absolute"
                  :background "lightgreen"
@@ -69,19 +84,7 @@
                  :max-width "500px"}}
    [:center
     [:h1 "μSnake"]
-    (case (:view @app-state)
-      start-page [start-page {:on-play-now #(dispatch :change-view 'game)
-                              :on-new-game #(dispatch :new-game)
-                              :on-join #(dispatch :change-view 'join-page)}]
-      new-game-page [new-game-page {:code (:room-id @app-state)
-                                    :copied? (:room-id-copied? @app-state)
-                                    :on-play #(dispatch :change-view 'game)
-                                    :on-copy #(dispatch :copy-room-id)}]
-      join-page [join-page {:code (:room-code @app-state)
-                            :on-change-code #(dispatch :change-room-code %)
-                            :on-play #(dispatch :join-room)}]
-      game [board @app-state #(dispatch :change-direction %)]
-      waiting [waiting-page])]])
+    [game-view app-state dispatch]]])
 
 (defonce world (make-world app-state {:on-render app
                                       :on-message message
