@@ -62,7 +62,7 @@
               (swap! reality world-dispatch settings client-id type params))]])
         (:worlds @reality))])
 
-(defn render-snapshot [state snapshots settings]
+(defn render-snapshot [state steps snapshots settings]
   (with-let [change-step (fn [state index]
                            (-> state
                                (assoc :index index)
@@ -76,7 +76,7 @@
     [:div
      [:h2
       (let [idx (:index @state)
-            step (get (:steps @state) (dec idx))]
+            step (get steps (dec idx))]
         (if (zero? idx)
           "Before the creation ..."
           (str (str idx) ": " (str step))))]

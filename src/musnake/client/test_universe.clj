@@ -1,11 +1,12 @@
 (ns musnake.client.test-universe)
 
 (defmacro defcard-universe [name settings & steps]
-  `(let [snapshots# (steps->snapshots [~@steps] ~settings)
+  `(let [steps# [~@steps]
+         snapshots# (steps->snapshots steps# ~settings)
          reality# (first snapshots#)]
      (devcards.core/defcard-rg ~name
        (fn [state# _#]
-         [render-snapshot state# snapshots# ~settings])
+         [render-snapshot state# steps# snapshots# ~settings])
        (reagent.core/atom
         {:index 0
          :steps [~@steps]
