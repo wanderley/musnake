@@ -3,7 +3,7 @@
             [clojure.core.async :as async]
             [medley.core :refer [random-uuid]]))
 
-(defn make-universe [app-state {:keys [tick-rate on-event]}]
+(defn make-universe
   "Creates an universe where
 
   - `tick-rate` is an interval in seconds which the clock will tick in the
@@ -45,6 +45,7 @@
 
   - `ws-handler` is a function that handles all connection/message logic (using
     sockets)."
+  [app-state {:keys [tick-rate on-event]}]
   (let [main-chan (async/chan (async/sliding-buffer 10))
         main-mult (async/mult main-chan)
         connections (atom {})

@@ -225,7 +225,7 @@
    [menu
     [:div "Waiting for the snakver ..."]]])
 
-(defcard-rg waiting-page
+(defcard-rg waiting-page-card
   [waiting-page])
 
 (defn game-view [app-state dispatch]

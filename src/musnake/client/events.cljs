@@ -1,5 +1,4 @@
-(ns musnake.client.events
-  (:require [musnake.shared.model :as m]))
+(ns musnake.client.events)
 
 ;;; Server
 
@@ -47,5 +46,5 @@
   {:state (assoc state :view 'waiting)
    :server-dispatch ['join (:room-code state)]})
 
-(defmethod message :change-direction [_ state direction]
+(defmethod message :change-direction [_ _ direction]
   {:server-dispatch ['change-direction direction]})

@@ -9,9 +9,9 @@
       (assoc :client-id client-id)
       (assoc :room-id room-id)))
 
-(defmulti event! (fn [type & params] type))
+(defmulti event! (fn [type & _] type))
 
-(defmethod event! :default [_ app-state & params]
+(defmethod event! :default [_ app-state & _]
   {:state app-state})
 
 (defmethod event! 'change-direction [_ app-state client-id direction]
@@ -22,7 +22,7 @@
         room-id (get-in state [:client-rooms client-id])
         room (extract-client-state state client-id room-id)]
     {:state state
-     :client-message [client-id 'join-room room]}))
+     :client-messages [[client-id 'join-room room]]}))
 
 (defmethod event! 'join [_ app-state client-id room-id]
   (if (get-in app-state [:rooms room-id])
@@ -30,12 +30,16 @@
           room-id (get-in state [:client-rooms client-id])
           room (extract-client-state state client-id room-id)]
       {:state state
-       :client-message [client-id 'play room]})
+       :client-messages [[client-id 'play room]]})
     {:state app-state
-     :client-message [client-id 'join-failed]}))
+     :client-messages [[client-id 'join-failed]]}))
 
 (defmethod event! 'connect [_ app-state client-id]
-  {:state (m/connect! app-state :lobby client-id)})
+  (let [next (m/connect! app-state :lobby client-id)]
+    {:state next
+     :client-messages
+     [[client-id 'state
+       (extract-client-state next client-id :lobby)]]}))
 
 (defmethod event! 'disconnect [_ app-state client-id]
   {:state (m/disconnect app-state client-id)})
@@ -51,5 +55,5 @@
     {:state state
      :client-messages client-messages}))
 
-(defmethod event! 'big-chrunch [_ app-state]
+(defmethod event! 'big-chrunch [_ _]
   {:state m/server-initial-state})

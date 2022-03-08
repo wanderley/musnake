@@ -52,7 +52,7 @@
                 :source-paths ["src" "dev"]
                 :figwheel {:devcards true
                            :open-urls ["http://localhost:3449/cards.html"]}
-                :compiler {:main       musnake.client.views
+                :compiler {:main       musnake.client.cards
                            :asset-path "js/compiled/cards_out"
                            :output-to  "resources/public/js/compiled/cards.js"
                            :output-dir "resources/public/js/compiled/cards_out"
