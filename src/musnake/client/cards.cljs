@@ -1,10 +1,10 @@
 (ns musnake.client.cards
-  (:require [devcards.core :refer [deftest]]
-            [cljs.test :refer [is testing] :include-macros true]
-            [musnake.client.views :refer [game-view]]
+  (:require [cljs.test :refer [is testing] :include-macros true]
+            [devcards.core :refer [deftest]]
             [musnake.client.events :as c]
-            [musnake.server.events :as s]
             [musnake.client.test-universe :refer [defcard-universe simulate-universe]]
+            [musnake.client.views :refer [game-view]]
+            [musnake.server.events :as s]
             [musnake.shared.model :as m]))
 
 (defonce settings
@@ -28,11 +28,35 @@
   [:dispatch :snake-b :join-room]
   [:dispatch :snake-a :change-direction 'down]
   [:dispatch :snake-b :change-direction 'up]
-  [:tick]
-  [:connect :Leonardo]
-  [:dispatch :Leonardo :change-view 'game])
+  [:tick])
 
 (deftest test-musnake
+  (testing "Users can play on lobby"
+    (let [s (simulate-universe
+             settings
+             [:connect :snake-a]
+             [:dispatch :snake-a :change-view 'game]
+             [:tick])]
+      (is (= (-> s (get-in [:universe :client-rooms]) keys set)
+             (-> s (get-in [:universe :rooms :lobby :snakes]) keys set)
+             (-> s (get-in [:worlds :snake-a :snakes]) keys set)
+             #{:snake-a})
+          "One snake is playing alone on the lobby!"))
+
+    (let [s (simulate-universe
+             settings
+             [:connect :snake-a]
+             [:connect :snake-b]
+             [:dispatch :snake-a :change-view 'game]
+             [:dispatch :snake-b :change-view 'game]
+             [:tick])]
+      (is (= (-> s (get-in [:universe :client-rooms]) keys set)
+             (-> s (get-in [:universe :rooms :lobby :snakes]) keys set)
+             (-> s (get-in [:worlds :snake-a :snakes]) keys set)
+             (-> s (get-in [:worlds :snake-b :snakes]) keys set)
+             #{:snake-a :snake-b})
+          "Both snakes are playing on lobby")))
+
   (testing "Users can play on private room"
     (let [s (simulate-universe
              settings
