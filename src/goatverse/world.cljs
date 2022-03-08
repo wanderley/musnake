@@ -1,4 +1,4 @@
-(ns musnake.client.world
+(ns goatverse.world
   (:require [cljs.core.async :as async :include-macros true]
             [chord.client :refer [ws-ch]]))
 

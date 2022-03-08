@@ -1,4 +1,4 @@
-(ns musnake.client.test-universe)
+(ns goatverse.test-universe)
 
 (defmacro defcard-universe [name settings & steps]
   `(let [steps# [~@steps]

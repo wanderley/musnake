@@ -1,4 +1,4 @@
-(ns musnake.server.universe
+(ns goatverse.universe
   (:require [chord.http-kit :refer [with-channel]]
             [clojure.core.async :as async]
             [medley.core :refer [random-uuid]]))

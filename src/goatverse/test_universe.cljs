@@ -1,6 +1,6 @@
-(ns musnake.client.test-universe
+(ns goatverse.test-universe
   (:require [reagent.core :refer [cursor with-let]])
-  (:require-macros [musnake.client.test-universe]))
+  (:require-macros [goatverse.test-universe]))
 
 (defn universe->world-dispatch
   "Send message from universe to a specific world."

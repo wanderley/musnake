@@ -1,8 +1,8 @@
 (ns musnake.server.handler
   (:require [compojure.core :refer [defroutes GET]]
             [compojure.route :as route]
+            [goatverse.universe :refer [make-universe]]
             [musnake.server.messages :refer [message]]
-            [musnake.server.universe :refer [make-universe]]
             [musnake.shared.model :as m]
             [ring.util.response :as resp]))
 

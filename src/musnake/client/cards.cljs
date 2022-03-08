@@ -1,8 +1,8 @@
 (ns musnake.client.cards
   (:require [cljs.test :refer [is testing] :include-macros true]
             [devcards.core :refer [deftest]]
+            [goatverse.test-universe :refer [defcard-universe simulate-universe]]
             [musnake.client.events :as c]
-            [musnake.client.test-universe :refer [defcard-universe simulate-universe]]
             [musnake.client.views :refer [game-view]]
             [musnake.server.messages :as s]
             [musnake.shared.model :as m]))

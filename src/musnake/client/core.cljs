@@ -1,8 +1,8 @@
 (ns musnake.client.core
-  (:require [musnake.shared.model :as m]
-            [musnake.client.world :refer [make-world]]
+  (:require [goatverse.world :refer [make-world]]
             [musnake.client.events :refer [server-message message]]
             [musnake.client.views :refer [game-view]]
+            [musnake.shared.model :as m]
             [reagent.core :as reagent :refer [atom]]
             [reagent.dom :as rd]))
 
