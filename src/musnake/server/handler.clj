@@ -1,9 +1,9 @@
 (ns musnake.server.handler
   (:require [compojure.core :refer [defroutes GET]]
             [compojure.route :as route]
-            [musnake.shared.model :as m]
+            [musnake.server.messages :refer [message]]
             [musnake.server.universe :refer [make-universe]]
-            [musnake.server.events :refer [event!]]
+            [musnake.shared.model :as m]
             [ring.util.response :as resp]))
 
 ;;; State
@@ -15,7 +15,7 @@
 (defonce universe
   (make-universe app-state
                  {:tick-rate 1/10
-                  :on-event event!}))
+                  :on-event message}))
 (defonce big-bang! (:big-bang! universe))
 
 (comment

@@ -4,13 +4,13 @@
             [musnake.client.events :as c]
             [musnake.client.test-universe :refer [defcard-universe simulate-universe]]
             [musnake.client.views :refer [game-view]]
-            [musnake.server.events :as s]
+            [musnake.server.messages :as s]
             [musnake.shared.model :as m]))
 
 (defonce settings
   {:universe {:initial-state m/server-initial-state
               :tick-rate (/ 1 4)
-              :on-message s/event!}
+              :on-message s/message}
    :world {:initial-state m/client-initial-state
            :on-render game-view
            :on-message c/message
