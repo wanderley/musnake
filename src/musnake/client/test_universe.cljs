@@ -75,8 +75,11 @@
                                         (get-in settings [:universe :tick-rate])))]
     [:div
      [:h2
-      (:index @state) ": "
-      (str (get (:steps @state) (:index @state)))]
+      (let [idx (:index @state)
+            step (get (:steps @state) (dec idx))]
+        (if (zero? idx)
+          "Before the creation ..."
+          (str (str idx) ": " (str step))))]
      [:button {:on-click
                (fn [_]
                  (swap! state
