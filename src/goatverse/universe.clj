@@ -65,12 +65,13 @@
                              (if (:state next) (:state next) %))))]
     {:big-bang!
      (fn big-bang! []
-       (future (while true
-                 (do (Thread/sleep (* 1000 (or tick-rate 1/28)))
-                     (try
-                       (dispatch 'tick)
-                       (catch Exception e
-                         (println (.getMessage e))))))))
+       (when tick-rate
+         (future (while true
+                   (do (Thread/sleep (* 1000 tick-rate))
+                       (try
+                         (dispatch 'tick)
+                         (catch Exception e
+                           (println (.getMessage e)))))))))
 
      :big-chrunch!
      (fn big-crunch! []

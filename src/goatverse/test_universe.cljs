@@ -50,7 +50,8 @@
     (world-dispatch state settings client-id type resolve-params)))
 
 (defmethod step :tick [state settings]
-  (universe-dispatch state settings 'tick))
+  (when (-> settings :universe :tick-rate)
+    (universe-dispatch state settings 'tick)))
 
 (defn render-reality [reality settings]
   [:div
