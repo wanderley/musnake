@@ -97,7 +97,7 @@
       "Next"]
      " Live?"
      [:input {:type "checkbox"
-              :checked (:live? reality)
+              :value (or (:live? @reality) false)
               :on-click #(swap! reality update :live? (fn [live?] (not live?)))}]
      [render-reality reality settings]]
     (finally (js/clearInterval tick-fn))))
