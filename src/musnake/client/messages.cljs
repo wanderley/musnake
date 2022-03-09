@@ -1,33 +1,27 @@
-(ns musnake.client.events)
-
-;;; Server
-
-(defmulti server-message (fn [type & _] type))
-
-(defmethod server-message 'state [_ state new-state]
-  (merge state new-state))
-
-(defmethod server-message 'client-id [_ state client-id]
-  (assoc state :client-id client-id))
-
-(defmethod server-message 'join-room [_ state new-state]
-  (-> state
-      (merge new-state)
-      (assoc :view 'new-game-page)))
-
-(defmethod server-message 'join-failed [_ state]
-  (-> state
-      (assoc :room-code "")
-      (assoc :view 'join-page)))
-
-(defmethod server-message 'play [_ state new-state]
-  (-> state
-      (merge new-state)
-      (assoc :view 'game)))
-
-;;; Views
+(ns musnake.client.messages)
 
 (defmulti message (fn [type & _] type))
+
+(defmethod message 'state [_ state new-state]
+  {:state (merge state new-state)})
+
+(defmethod message 'client-id [_ state client-id]
+  {:state (assoc state :client-id client-id)})
+
+(defmethod message 'join-room [_ state new-state]
+  {:state (-> state
+              (merge new-state)
+              (assoc :view 'new-game-page))})
+
+(defmethod message 'join-failed [_ state]
+  {:state (-> state
+              (assoc :room-code "")
+              (assoc :view 'join-page))})
+
+(defmethod message 'play [_ state new-state]
+  {:state (-> state
+              (merge new-state)
+              (assoc :view 'game))})
 
 (defmethod message :change-view [_ state view]
   {:state (assoc state :view view)})

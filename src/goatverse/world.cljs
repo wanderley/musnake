@@ -27,18 +27,17 @@
           (receive-messages! ws-channel incoming-messages))))))
 
 
-(defn make-world [state {:keys [on-render on-message on-server-message]}]
+(defn make-world [state {:keys [on-render on-message]}]
   (let [incoming-messages (async/chan (async/sliding-buffer 10))
         outgoing-messages (async/chan (async/sliding-buffer 10))
         server-dispatch! (fn [& message]
                            (async/put! outgoing-messages message))
-        consume-server-message (async/go-loop []
-                                 (let [message (async/<! incoming-messages)]
-                                   (swap! state
-                                          #(apply on-server-message
-                                                  (into [(first message) %]
-                                                        (rest message)))))
-                                 (recur))
+        dispatch (fn [type & params]
+                   (let [next (apply on-message (into [type @state] params))]
+                     (when (:state next)
+                       (swap! state #(identity (:state next))))
+                     (when (:server-dispatch next)
+                       (apply server-dispatch! (:server-dispatch next)))))
         connection (connect! (str
                               (case (.. js/document -location -protocol)
                                 "https:" "wss:"
@@ -46,11 +45,9 @@
                               "//" (.. js/document -location -host) "/ws")
                              outgoing-messages
                              incoming-messages)
-        dispatch (fn [type & params]
-                   (let [next (apply on-message (into [type @state] params))]
-                     (when (:state next)
-                       (swap! state #(identity (:state next))))
-                     (when (:server-dispatch next)
-                       (apply server-dispatch! (:server-dispatch next)))))]
+        consume-server-message (async/go-loop []
+                                 (let [message (async/<! incoming-messages)]
+                                   (apply dispatch message))
+                                 (recur))]
     (fn []
       (on-render state dispatch))))

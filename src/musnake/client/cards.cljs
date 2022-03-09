@@ -2,7 +2,7 @@
   (:require [cljs.test :refer [is testing] :include-macros true]
             [devcards.core :refer [deftest]]
             [goatverse.test-universe :refer [defcard-universe simulate-universe]]
-            [musnake.client.events :as c]
+            [musnake.client.messages :as c]
             [musnake.client.views :refer [game-view]]
             [musnake.server.messages :as s]
             [musnake.shared.model :as m]))
@@ -13,8 +13,7 @@
               :on-message s/message}
    :world {:initial-state m/client-initial-state
            :on-render game-view
-           :on-message c/message
-           :on-server-message c/server-message}})
+           :on-message c/message}})
 
 (defcard-universe two-clients-on-same-room
   settings

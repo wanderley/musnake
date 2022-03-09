@@ -2,14 +2,7 @@
   (:require [reagent.core :refer [cursor with-let]])
   (:require-macros [goatverse.test-universe]))
 
-(defn universe->world-dispatch
-  "Send message from universe to a specific world."
-  [snapshot settings client-id type params]
-  (assoc-in snapshot [:worlds client-id]
-            (apply (get-in settings [:world :on-server-message])
-                   (into [type (get-in snapshot [:worlds client-id])]
-                         params))))
-
+(declare world-dispatch)
 (defn universe-dispatch [state settings type & params]
   (let [curr     (:universe state)
         res      (apply (get-in settings [:universe :on-message])
@@ -18,7 +11,7 @@
         messages (:client-messages res)]
     (if messages
       (reduce (fn [state [client-id type & params]]
-                (universe->world-dispatch state settings client-id type params))
+                (world-dispatch state settings client-id type params))
               (assoc state :universe next)
               messages)
       (assoc state :universe next))))

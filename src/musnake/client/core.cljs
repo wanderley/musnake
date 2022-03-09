@@ -1,6 +1,6 @@
 (ns musnake.client.core
   (:require [goatverse.world :refer [make-world]]
-            [musnake.client.events :refer [server-message message]]
+            [musnake.client.messages :refer [message]]
             [musnake.client.views :refer [game-view]]
             [musnake.shared.model :as m]
             [reagent.core :as reagent :refer [atom]]
@@ -20,8 +20,7 @@
     [game-view @app-state dispatch]]])
 
 (defonce world (make-world app-state {:on-render app
-                                      :on-message message
-                                      :on-server-message server-message}))
+                                      :on-message message}))
 
 (rd/render [world]
            (. js/document (getElementById "app")))
