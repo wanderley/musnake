@@ -21,7 +21,7 @@
         res      (apply (get-in settings [:world :on-message])
                         (into [type curr] params))
         next     (or (:state res) curr)
-        messages (:server-dispatch res)]
+        messages (:universe-dispatch res)]
     (if messages
       (apply universe-dispatch
              (into [(assoc-in snapshot [:worlds client-id] next)

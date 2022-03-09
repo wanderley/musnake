@@ -28,7 +28,7 @@
 
 (defmethod message :new-game [_ state]
   {:state (assoc state :view 'waiting)
-   :server-dispatch ['new-game]})
+   :universe-dispatch ['new-game]})
 
 (defmethod message :copy-room-id [_ state]
   {:state (assoc state :room-id-copied? true)})
@@ -38,7 +38,7 @@
 
 (defmethod message :join-room [_ state]
   {:state (assoc state :view 'waiting)
-   :server-dispatch ['join (:room-code state)]})
+   :universe-dispatch ['join (:room-code state)]})
 
 (defmethod message :change-direction [_ _ direction]
-  {:server-dispatch ['change-direction direction]})
+  {:universe-dispatch ['change-direction direction]})

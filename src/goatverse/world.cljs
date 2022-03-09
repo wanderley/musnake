@@ -36,8 +36,8 @@
                    (let [next (apply on-message (into [type @state] params))]
                      (when (:state next)
                        (swap! state #(identity (:state next))))
-                     (when (:server-dispatch next)
-                       (apply server-dispatch! (:server-dispatch next)))))
+                     (when (:universe-dispatch next)
+                       (apply universe-dispatch! (:universe-dispatch next)))))
         connection (connect! (str
                               (case (.. js/document -location -protocol)
                                 "https:" "wss:"
