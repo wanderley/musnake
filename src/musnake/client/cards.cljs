@@ -14,7 +14,7 @@
    :world {:initial-state m/client-initial-state
            :on-render game-view
            :on-message c/message
-           :on-universe-message c/server-message}})
+           :on-server-message c/server-message}})
 
 (defcard-universe two-clients-on-same-room
   settings

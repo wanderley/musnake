@@ -6,7 +6,7 @@
   "Send message from universe to a specific world."
   [snapshot settings client-id type params]
   (assoc-in snapshot [:worlds client-id]
-            (apply (get-in settings [:world :on-universe-message])
+            (apply (get-in settings [:world :on-server-message])
                    (into [type (get-in snapshot [:worlds client-id])]
                          params))))
 
