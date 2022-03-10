@@ -151,12 +151,12 @@
   {:snakes {}
    :food (random-pos! board-cols board-rows)})
 
-(def client-initial-state
+(def world-initial-state
   (assoc room-initial-state :view 'start-page))
 
-(def server-initial-state
-  {:rooms {:lobby (dissoc client-initial-state :view)}
-   :client-rooms {}})
+(def universe-initial-state
+  {:rooms {:lobby (dissoc world-initial-state :view)}
+   :world-rooms {}})
 
 (defn opposite-direction [d]
   (case d
@@ -166,14 +166,14 @@
     down  'up
     nil))
 
-(defn change-direction [app-state client-id d]
-  (let [room (get-in app-state [:client-rooms client-id])
+(defn change-direction [app-state world-id d]
+  (let [room (get-in app-state [:world-rooms world-id])
         op (-> app-state
-               (get-in [:rooms room :snakes client-id :direction])
+               (get-in [:rooms room :snakes world-id :direction])
                opposite-direction)]
     (if (= d op)
       app-state
-      (assoc-in app-state [:rooms room :snakes client-id :direction] d))))
+      (assoc-in app-state [:rooms room :snakes world-id :direction] d))))
 
 (defn process-frame [app-state]
   (-> app-state
@@ -186,53 +186,53 @@
                       revive-dead-snakes!))
                 %))))
 
-(defn connect [app-state client-id room unoccupied-pos]
+(defn connect [app-state world-id room unoccupied-pos]
   (-> app-state
-      (assoc-in [:rooms room :snakes client-id]
+      (assoc-in [:rooms room :snakes world-id]
                 {:body [unoccupied-pos] :alive? true})
-      (assoc-in [:client-rooms client-id] room)))
+      (assoc-in [:world-rooms world-id] room)))
 
-(defn connect! [app-state room client-id]
-  (connect app-state client-id room (get-unoccupied-pos! app-state)))
+(defn connect! [app-state room world-id]
+  (connect app-state world-id room (get-unoccupied-pos! app-state)))
 
-(defn disconnect [app-state client-id]
-  (let [room (get-in app-state [:client-rooms client-id])]
+(defn disconnect [app-state world-id]
+  (let [room (get-in app-state [:world-rooms world-id])]
     (-> app-state
-        (update-in [:rooms room :snakes] dissoc client-id)
-        (update-in [:client-rooms] dissoc client-id))))
+        (update-in [:rooms room :snakes] dissoc world-id)
+        (update-in [:world-rooms] dissoc world-id))))
 
-(defn new-game [app-state client-id room unoccupied-pos]
+(defn new-game [app-state world-id room unoccupied-pos]
   (-> app-state
-      (disconnect client-id)
+      (disconnect world-id)
       (assoc-in [:rooms room] room-initial-state)
-      (connect client-id room unoccupied-pos)))
+      (connect world-id room unoccupied-pos)))
 
-(defn new-game! [app-state client-id]
+(defn new-game! [app-state world-id]
   (new-game app-state
-            client-id
+            world-id
             (.toString (random-uuid))
             (get-unoccupied-pos! app-state)))
 
 (deftest test-app-state
   (testing "connect and disconnect"
-    (is (= (-> server-initial-state
+    (is (= (-> universe-initial-state
                (connect :python :lobby {:x 10 :y 10})
                (get-in [:rooms :lobby :snakes :python :body 0]))
            {:x 10 :y 10}))
-    (is (= (-> server-initial-state
+    (is (= (-> universe-initial-state
                (connect :python :lobby {:x 10 :y 10})
                (disconnect :python))
-           server-initial-state)))
+           universe-initial-state)))
 
   (testing "new game"
-    (is (= (-> server-initial-state
+    (is (= (-> universe-initial-state
                (connect :python :lobby {:x 10 :y 10})
                (new-game :python :private-room {:x 11 :y 11})
                (get-in [:rooms :private-room :snakes :python :body 0]))
            {:x 11 :y 11})))
 
   (testing "process frame"
-    (is (= (-> server-initial-state
+    (is (= (-> universe-initial-state
                (connect :python :lobby {:x 10 :y 10})
                (change-direction :python 'up)
                (process-frame)

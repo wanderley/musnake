@@ -8,7 +8,7 @@
 
 ;;; State
 
-(defonce app-state (atom m/server-initial-state))
+(defonce app-state (atom m/universe-initial-state))
 
 ;;; Handler
 
@@ -19,7 +19,7 @@
 (defonce big-bang! (:big-bang! universe))
 
 (comment
-  ;; Start game loop on server
+  ;; Start game loop on universe
   (big-bang!))
 
 (defroutes app

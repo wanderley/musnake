@@ -8,7 +8,7 @@
 
 (enable-console-print!)
 
-(defonce app-state (atom m/client-initial-state))
+(defonce app-state (atom m/world-initial-state))
 
 (defn app [app-state dispatch]
   [:div {:style {:position "absolute"

@@ -8,14 +8,14 @@
             [musnake.shared.model :as m]))
 
 (defonce settings
-  {:universe {:initial-state m/server-initial-state
+  {:universe {:initial-state m/universe-initial-state
               :tick-rate (/ 1 4)
               :on-message s/message}
-   :world {:initial-state m/client-initial-state
+   :world {:initial-state m/world-initial-state
            :on-render game-view
            :on-message c/message}})
 
-(defcard-universe two-clients-on-same-room
+(defcard-universe two-snakes-on-same-room
   settings
   [:connect :snake-a]
   [:connect :snake-b]
@@ -36,7 +36,7 @@
              [:connect :snake-a]
              [:dispatch :snake-a :change-view 'game]
              [:tick])]
-      (is (= (-> s (get-in [:universe :client-rooms]) keys set)
+      (is (= (-> s (get-in [:universe :world-rooms]) keys set)
              (-> s (get-in [:universe :rooms :lobby :snakes]) keys set)
              (-> s (get-in [:worlds :snake-a :snakes]) keys set)
              #{:snake-a})
@@ -49,7 +49,7 @@
              [:dispatch :snake-a :change-view 'game]
              [:dispatch :snake-b :change-view 'game]
              [:tick])]
-      (is (= (-> s (get-in [:universe :client-rooms]) keys set)
+      (is (= (-> s (get-in [:universe :world-rooms]) keys set)
              (-> s (get-in [:universe :rooms :lobby :snakes]) keys set)
              (-> s (get-in [:worlds :snake-a :snakes]) keys set)
              (-> s (get-in [:worlds :snake-b :snakes]) keys set)
@@ -68,13 +68,13 @@
               #(-> % :worlds :snake-a :room-id)]
              [:dispatch :snake-b :join-room]
              [:tick])
-          snake-a-room-id (get-in s [:universe :client-rooms :snake-a])
+          snake-a-room-id (get-in s [:universe :world-rooms :snake-a])
           snake-a-room (get-in s [:universe :rooms snake-a-room-id])]
 
       (is (zero? (-> s (get-in [:universe :rooms :looby]) count))
           "No one is in the lobby")
 
-      (is (= (-> s (get-in [:universe :client-rooms]) keys set)
+      (is (= (-> s (get-in [:universe :world-rooms]) keys set)
              (-> snake-a-room :snakes keys set)
              (-> s (get-in [:worlds :snake-a :snakes]) keys set)
              (-> s (get-in [:worlds :snake-b :snakes]) keys set)

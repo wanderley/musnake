@@ -18,12 +18,12 @@
     event to a specific world.
 
   - `connect` occurs for every world creation.  This event always has one
-    parameter `client-id` that identify the world.  A webpage can have zero, one
+    parameter `world-id` that identify the world.  A webpage can have zero, one
     or more worlds running simultaneously.
 
   - `disconnect` occurs when a world is destroyed.  After this event, the
     universe can't communicate with the world or vice e versa.  This event
-    always has one parameter `client-id` which represents the world that
+    always has one parameter `world-id` which represents the world that
     disconnected.
 
   - `big-chrunch` occurs when the universe expansion reverses causing it to
@@ -49,19 +49,19 @@
   (let [main-chan (async/chan (async/sliding-buffer 10))
         main-mult (async/mult main-chan)
         connections (atom {})
-        send-message (fn [client-id params]
-                       (async/put! (get-in @connections [client-id :tap])
+        send-message (fn [world-id params]
+                       (async/put! (get-in @connections [world-id :tap])
                                    params))
         dispatch (fn [& params]
                    (swap! app-state
                           #(let [next
                                  (apply on-event (into [(first params) %]
                                                        (rest params)))]
-                             (when-let [[client-id & params] (:client-message next)]
-                               (send-message client-id params))
-                             (when-let [messages (:client-messages next)]
-                               (doseq [[client-id & params] messages]
-                                 (send-message client-id params)))
+                             (when-let [[world-id & params] (:world-message next)]
+                               (send-message world-id params))
+                             (when-let [messages (:world-messages next)]
+                               (doseq [[world-id & params] messages]
+                                 (send-message world-id params)))
                              (if (:state next) (:state next) %))))]
     {:big-bang!
      (fn big-bang! []
@@ -85,33 +85,33 @@
      :ws-handler
      (fn ws-handler
        [req]
-       (with-channel req client-channel
-         (let [client-tap (async/chan (async/sliding-buffer 10))
-               client-id (.toString (random-uuid))]
-           (swap! connections assoc client-id {:channel client-channel
-                                               :tap     client-tap})
-           (dispatch 'connect client-id)
-           (async/put! client-channel ['client-id client-id])
-           (async/tap main-mult client-tap)
+       (with-channel req world-channel
+         (let [world-tap (async/chan (async/sliding-buffer 10))
+               world-id (.toString (random-uuid))]
+           (swap! connections assoc world-id {:channel world-channel
+                                               :tap     world-tap})
+           (dispatch 'connect world-id)
+           (async/put! world-channel ['world-id world-id])
+           (async/tap main-mult world-tap)
            (async/go-loop []
              (async/alt!
-               client-tap
+               world-tap
                ([message]
                 (if message
                   (do
-                    (async/>! client-channel message)
+                    (async/>! world-channel message)
                     (recur))
-                  (async/close! client-channel)))
+                  (async/close! world-channel)))
 
-               client-channel
+               world-channel
                ([{:keys [message]}]
                 (if message
                   (do
-                    (apply dispatch (concat (list (first message) client-id)
+                    (apply dispatch (concat (list (first message) world-id)
                                             (rest message)))
                     (recur))
                   (do
-                    (async/untap main-mult client-tap)
-                    (async/close! client-tap)
-                    (swap! connections dissoc client-id)
-                    (dispatch 'disconnect client-id)))))))))}))
+                    (async/untap main-mult world-tap)
+                    (async/close! world-tap)
+                    (swap! connections dissoc world-id)
+                    (dispatch 'disconnect world-id)))))))))}))

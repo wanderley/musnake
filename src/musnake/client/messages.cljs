@@ -5,8 +5,8 @@
 (defmethod message 'state [_ state new-state]
   {:state (merge state new-state)})
 
-(defmethod message 'client-id [_ state client-id]
-  {:state (assoc state :client-id client-id)})
+(defmethod message 'world-id [_ state world-id]
+  {:state (assoc state :world-id world-id)})
 
 (defmethod message 'join-room [_ state new-state]
   {:state (-> state

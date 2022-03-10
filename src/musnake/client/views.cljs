@@ -46,7 +46,7 @@
 (defn board [& _]
   (let [last-touch (atom nil)
         svg-ref-with-listener (atom nil)]
-    (fn [{client-id :client-id
+    (fn [{world-id :world-id
           snakes    :snakes
           food-pos  :food}
          on-change-direction]
@@ -98,26 +98,26 @@
                ;; Objects
                [food food-pos]]
               (for [[id snake] snakes]
-                [snake-body snake (if (= id client-id)
+                [snake-body snake (if (= id world-id)
                                     "blue" "red")]))]])))
 
 (defcard empty-board
   "An empty board with just one food rendered on it.  Note that a valid board
   always has at least one food placed on it."
   (reagent/as-element
-   [board m/client-initial-state #()]))
+   [board m/world-initial-state #()]))
 
 (defcard-rg user-can-move-around
   (fn [app-state _]
     [board (-> @app-state
                (get-in [:rooms :lobby])
-               (assoc :client-id :test))
+               (assoc :world-id :test))
      (fn [d]
        (swap! app-state
               #(-> %
                    (m/change-direction :test d)
                    (m/process-frame))))])
-  (atom (-> m/server-initial-state
+  (atom (-> m/universe-initial-state
             (m/connect :test :lobby {:x 10 :y 10})))
   {:inspect-data true})
 

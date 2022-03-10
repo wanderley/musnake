@@ -8,39 +8,39 @@
         res      (apply (get-in settings [:universe :on-message])
                         (into [type curr] params))
         next     (or (:state res) curr)
-        messages (:client-messages res)]
+        messages (:world-messages res)]
     (if messages
-      (reduce (fn [state [client-id type & params]]
-                (world-dispatch state settings client-id type params))
+      (reduce (fn [state [world-id type & params]]
+                (world-dispatch state settings world-id type params))
               (assoc state :universe next)
               messages)
       (assoc state :universe next))))
 
-(defn world-dispatch [snapshot settings client-id type params]
-  (let [curr     (get-in snapshot [:worlds client-id])
+(defn world-dispatch [snapshot settings world-id type params]
+  (let [curr     (get-in snapshot [:worlds world-id])
         res      (apply (get-in settings [:world :on-message])
                         (into [type curr] params))
         next     (or (:state res) curr)
         messages (:universe-dispatch res)]
     (if messages
       (apply universe-dispatch
-             (into [(assoc-in snapshot [:worlds client-id] next)
+             (into [(assoc-in snapshot [:worlds world-id] next)
                     settings
                     (first messages)
-                    client-id]
+                    world-id]
                    (rest messages)))
-      (assoc-in snapshot [:worlds client-id] next))))
+      (assoc-in snapshot [:worlds world-id] next))))
 
 (defmulti step (fn [_ _ command & _] command))
-(defmethod step :connect [state settings _ client-id]
+(defmethod step :connect [state settings _ world-id]
   (-> state
-      (assoc-in [:worlds client-id]
+      (assoc-in [:worlds world-id]
                 (get-in settings [:world :initial-state]))
-      (universe-dispatch settings 'connect client-id)))
+      (universe-dispatch settings 'connect world-id)))
 
-(defmethod step :dispatch [state settings _ client-id type & params]
+(defmethod step :dispatch [state settings _ world-id type & params]
   (let [resolve-params (map (fn [p] (if (fn? p) (p state) p)) params)]
-    (world-dispatch state settings client-id type resolve-params)))
+    (world-dispatch state settings world-id type resolve-params)))
 
 (defmethod step :tick [state settings]
   (when (-> settings :universe :tick-rate)
@@ -48,12 +48,12 @@
 
 (defn render-reality [reality settings]
   [:div
-   (map (fn [[client-id world-state]]
-          ^{:key client-id}
-          [:div [:h3 client-id]
+   (map (fn [[world-id world-state]]
+          ^{:key world-id}
+          [:div [:h3 world-id]
            [(get-in settings [:world :on-render]) world-state
             (fn [type & params]
-              (swap! reality world-dispatch settings client-id type params))]])
+              (swap! reality world-dispatch settings world-id type params))]])
         (:worlds @reality))])
 
 (defn render-snapshot [state steps snapshots settings]

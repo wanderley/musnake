@@ -15,7 +15,7 @@
       (recur))))
 
 (defn- connect!
-  "Connects with the server and starts the input and output channels."
+  "Connects with the universe and starts the input and output channels."
   [ws-url outgoing-messages incoming-messages]
   (async/go
     (let [{:keys [ws-channel error]} (async/<! (ws-ch ws-url))]
@@ -30,8 +30,8 @@
 (defn make-world [state {:keys [on-render on-message]}]
   (let [incoming-messages (async/chan (async/sliding-buffer 10))
         outgoing-messages (async/chan (async/sliding-buffer 10))
-        server-dispatch! (fn [& message]
-                           (async/put! outgoing-messages message))
+        universe-dispatch! (fn [& message]
+                             (async/put! outgoing-messages message))
         dispatch (fn [type & params]
                    (let [next (apply on-message (into [type @state] params))]
                      (when (:state next)
@@ -44,10 +44,11 @@
                                 "ws:")
                               "//" (.. js/document -location -host) "/ws")
                              outgoing-messages
-                             incoming-messages)
-        consume-server-message (async/go-loop []
-                                 (let [message (async/<! incoming-messages)]
-                                   (apply dispatch message))
-                                 (recur))]
+                             incoming-messages)]
+
+    (async/go-loop []
+      (let [message (async/<! incoming-messages)]
+        (apply dispatch message))
+      (recur))
     (fn []
       (on-render state dispatch))))
